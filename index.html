@@ -1653,6 +1653,116 @@
             color: #666;
             text-align: center;
         }
+
+        /* 移动端响应式优化 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px 10px;
+            }
+            
+            .main-title {
+                font-size: 24px;
+                margin-bottom: 15px;
+            }
+            
+            .subtitle {
+                font-size: 16px;
+                margin-bottom: 20px;
+            }
+            
+            .flow-row {
+                gap: 15px;
+            }
+            
+            .flow-node {
+                padding: 12px;
+                margin-bottom: 15px;
+            }
+            
+            .node-title {
+                font-size: 15px;
+            }
+            
+            .node-subtitle {
+                font-size: 13px;
+            }
+        }
+
+        /* 特别针对手机屏幕的优化 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px 8px;
+            }
+            
+            .main-title {
+                font-size: 20px;
+                margin-bottom: 10px;
+            }
+            
+            .subtitle {
+                font-size: 14px;
+                margin-bottom: 15px;
+            }
+            
+            .flow-row {
+                display: block; /* 改为垂直排列 */
+            }
+            
+            .flow-column {
+                width: 100%;
+                min-width: 100%;
+            }
+            
+            .flow-node {
+                padding: 10px;
+                margin-bottom: 12px;
+            }
+            
+            .node-title {
+                font-size: 14px;
+                margin-bottom: 5px;
+            }
+            
+            .node-subtitle {
+                font-size: 12px;
+            }
+            
+            .node-icon {
+                font-size: 16px;
+                top: 8px;
+                right: 8px;
+            }
+            
+            /* 概览页面卡片样式优化 */
+            .overview-card {
+                width: 100%;
+                margin-bottom: 10px;
+                padding: 12px;
+            }
+            
+            .overview-card-title {
+                font-size: 15px;
+                margin-bottom: 5px;
+            }
+            
+            .overview-card-desc {
+                font-size: 12px;
+            }
+            
+            /* 控制面板按钮优化 */
+            .control-panel {
+                gap: 8px;
+                margin-bottom: 15px;
+            }
+            
+            .control-btn {
+                padding: 6px 10px;
+                font-size: 13px;
+                flex: 1 1 calc(50% - 8px); /* 两列排列 */
+                text-align: center;
+                min-width: unset;
+            }
+        }
     </style>
 </head>
 <body>
