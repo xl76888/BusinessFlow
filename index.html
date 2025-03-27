@@ -2,8 +2,9 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>牛排自由业务流程框架</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -780,6 +781,221 @@
                 width: 95%;
                 padding: 20px;
             }
+            /* 控制面板优化 */
+            .control-panel {
+                gap: 10px;
+                justify-content: center;
+            }
+            /* 地图优化 */
+            .map-container {
+                height: 350px;
+            }
+            .map-sidebar {
+                width: 40px;
+            }
+            .sidebar-button {
+                width: 30px;
+                height: 30px;
+                margin-bottom: 12px;
+            }
+            .map-location {
+                width: 32px;
+                height: 32px;
+            }
+            .store-list {
+                grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+            }
+            .store-info-card {
+                width: 220px;
+            }
+            .distance-indicator {
+                font-size: 11px;
+                padding: 5px 10px;
+            }
+        }
+        
+        /* 新增移动端优化 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px 5px;
+            }
+            .header {
+                margin-bottom: 20px;
+            }
+            .main-title {
+                font-size: 20px;
+            }
+            .subtitle {
+                font-size: 14px;
+                margin-top: 5px;
+            }
+            /* 控制按钮优化 */
+            .control-panel {
+                gap: 8px;
+                margin-bottom: 20px;
+            }
+            .control-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+                flex: 1 1 calc(50% - 8px);
+                justify-content: center;
+                min-width: unset;
+            }
+            .control-btn .icon {
+                margin-right: 4px;
+            }
+            /* 图例优化 */
+            .legend {
+                gap: 6px;
+                margin-bottom: 20px;
+            }
+            .legend-item {
+                padding: 4px 8px;
+                font-size: 11px;
+                gap: 4px;
+            }
+            /* 节点优化 */
+            .flow-node {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            .node-title {
+                font-size: 14px;
+                margin-bottom: 6px;
+            }
+            .node-subtitle {
+                font-size: 12px;
+            }
+            .node-icon {
+                font-size: 16px;
+                top: 8px;
+                right: 8px;
+            }
+            /* 地图进一步优化 */
+            .map-container {
+                height: 280px;
+            }
+            .map-sidebar {
+                width: 36px;
+            }
+            .sidebar-button {
+                width: 26px;
+                height: 26px;
+                margin-bottom: 10px;
+            }
+            .map-location {
+                width: 28px;
+                height: 28px;
+            }
+            .distance-indicator {
+                font-size: 10px;
+                padding: 4px 8px;
+                left: 10px;
+                bottom: 10px;
+            }
+            /* 店铺列表优化 */
+            .store-filter {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                padding-bottom: 5px;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            .store-filter::-webkit-scrollbar {
+                display: none;
+            }
+            .filter-btn {
+                flex: 0 0 auto;
+                white-space: nowrap;
+            }
+            .store-list-item {
+                padding: 10px;
+            }
+            .store-icon {
+                width: 30px;
+                height: 30px;
+                margin-right: 10px;
+            }
+            .store-name {
+                font-size: 13px;
+            }
+            .store-info {
+                font-size: 11px;
+            }
+            /* 模态框优化 */
+            .modal-content {
+                max-height: 75vh;
+            }
+            .modal-title {
+                font-size: 18px;
+                padding-bottom: 8px;
+                margin-bottom: 12px;
+            }
+            .modal-subtitle {
+                font-size: 15px;
+            }
+            .modal-info-item {
+                font-size: 13px;
+                padding-left: 20px;
+                margin-bottom: 8px;
+            }
+            .btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+            /* 烹饪选项优化 */
+            .cooking-options {
+                gap: 8px;
+            }
+            .cooking-option {
+                min-width: calc(50% - 8px);
+                padding: 12px 8px;
+            }
+            .cooking-circle {
+                width: 40px;
+                height: 40px;
+                margin-bottom: 8px;
+            }
+            .cooking-label {
+                font-size: 12px;
+            }
+            .cooking-desc {
+                font-size: 10px;
+            }
+        }
+        
+        /* 触摸优化 */
+        @media (hover: none) {
+            .flow-node, .control-btn, .legend-item, .cooking-option, .store-list-item, .map-location, .sidebar-button {
+                cursor: default;
+                -webkit-tap-highlight-color: transparent;
+                touch-action: manipulation;
+            }
+            
+            .flow-node:active, .control-btn:active, .legend-item:active, .cooking-option:active, .sidebar-button:active {
+                transform: scale(0.98);
+                opacity: 0.9;
+            }
+            
+            .btn:active, .info-card-btn:active {
+                transform: translateY(1px);
+            }
+        }
+        
+        /* 扩大移动端点击区域 */
+        @media (max-width: 768px) {
+            .modal-close, .info-card-close, .store-detail-header .close-detail {
+                min-width: 44px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+        
+        /* 优化iOS滚动 */
+        * {
+            -webkit-overflow-scrolling: touch;
         }
 
         /* 门店地图样式优化 */
@@ -1684,9 +1900,6 @@
             </div>
         </div>
     </div>
-
-    <!-- 添加Font Awesome图标库 -->
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
     <script>
         // 流程数据
@@ -4239,6 +4452,19 @@
                     description: "中关村科技园区内的创新牛排体验店，面向年轻群体，提供创意牛排料理和轻松活泼的用餐氛围。",
                     specialties: ["创意调味牛排", "多国风味牛排", "季节限定牛排"],
                     position: { top: "45%", left: "40%" }
+                },
+                store4: {
+                    name: "牛排自由 · 国贸店",
+                    address: "国贸商城B1层B123铺",
+                    rating: "4.9",
+                    reviews: "1756",
+                    hours: "10:00-22:30",
+                    phone: "010-87654321",
+                    distance: "4.8km",
+                    tags: ["高端商务", "精品牛排", "私人定制"],
+                    description: "位于国贸CBD核心区的旗舰店，主打高端商务宴请和精致用餐体验，提供顶级牛排和专业侍酒服务。",
+                    specialties: ["日本A5和牛", "美国顶级牛排", "私人定制料理"],
+                    position: { top: "35%", left: "65%" }
                 }
             };
             
@@ -4345,7 +4571,8 @@
             const locations = {
                 store1: { x: 60, y: 40 },
                 store2: { x: 55, y: 60 },
-                store3: { x: 40, y: 45 }
+                store3: { x: 40, y: 45 },
+                store4: { x: 65, y: 35 }
             };
             
             // 用户位置坐标（固定在地图中心）
