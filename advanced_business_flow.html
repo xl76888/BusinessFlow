@@ -1,0 +1,4538 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>牛排自由业务流程框架</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #f8f9fa;
+            padding: 20px;
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .main-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .main-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120%;
+            height: 4px;
+            background: linear-gradient(90deg, #1976d2, #9c27b0, #4caf50, #ff9800);
+            background-size: 300% 100%;
+            animation: gradientMove 3s linear infinite;
+            border-radius: 2px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #666;
+            margin-top: 15px;
+        }
+
+        .control-panel {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 15px;
+            color: #333;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-btn:hover {
+            background: #e0e0e0;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        .control-btn.active {
+            background: #1976d2;
+            color: white;
+        }
+
+        .flow-container {
+            overflow: hidden;
+            position: relative;
+            min-height: 500px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .legend-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .legend-item:hover .legend-color {
+            transform: scale(1.3);
+        }
+
+        /* 流程模块样式 */
+        .flow-section {
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .flow-section.active {
+            display: block;
+        }
+
+        .flow-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            position: relative;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .flow-column {
+            flex: 1;
+            min-width: 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .flow-node {
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            background: white;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            animation: fadeIn 0.5s ease backwards;
+            overflow: hidden;
+        }
+
+        .flow-node:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .flow-node.highlight {
+            animation: pulse 1.5s infinite;
+        }
+
+        .flow-node.user {
+            border-left: 5px solid #1976d2;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        }
+
+        .flow-node.restaurant {
+            border-left: 5px solid #9c27b0;
+            background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+        }
+
+        .flow-node.delivery {
+            border-left: 5px solid #4caf50;
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+        }
+
+        .flow-node.system {
+            border-left: 5px solid #ff9800;
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+        }
+
+        .node-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .node-subtitle {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .node-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.7);
+        }
+
+        .node-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 18px;
+        }
+
+        .flow-arrow {
+            position: relative;
+            height: 30px;
+            margin: 5px 0;
+            animation: fadeIn 0.5s ease backwards;
+        }
+
+        .flow-arrow::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 0;
+            background: #999;
+            transform: translateX(-50%);
+            animation: arrowFlow 1s ease-out forwards;
+        }
+
+        .flow-arrow::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: 4px;
+            width: 10px;
+            height: 10px;
+            border-right: 2px solid #999;
+            border-bottom: 2px solid #999;
+            transform: translateX(-50%) rotate(45deg);
+            opacity: 0;
+            animation: arrowPoint 1s ease-out forwards;
+            animation-delay: 0.7s;
+        }
+
+        .flow-connector {
+            position: absolute;
+            background: #ddd;
+            z-index: 1;
+        }
+
+        .connector-horizontal {
+            height: 2px;
+        }
+
+        .connector-vertical {
+            width: 2px;
+        }
+
+        .flow-map {
+            position: relative;
+            height: 400px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+
+        .map-location {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .map-location:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .map-location.user {
+            background: #1976d2;
+            color: white;
+        }
+
+        .map-location.restaurant {
+            background: #9c27b0;
+            color: white;
+        }
+
+        .map-circle {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px dashed #1976d2;
+            opacity: 0.5;
+            animation: fadeIn 1s ease forwards;
+        }
+
+        /* 模态框样式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            backdrop-filter: blur(3px);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+        }
+
+        .modal-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.95);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+            z-index: 1000;
+            max-width: 90%;
+            width: 600px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+
+        .modal-container.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .modal-header {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #333;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            position: relative;
+        }
+
+        .modal-title::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+        }
+
+        .modal-title.user::after {
+            background: #1976d2;
+        }
+
+        .modal-title.restaurant::after {
+            background: #9c27b0;
+        }
+
+        .modal-title.delivery::after {
+            background: #4caf50;
+        }
+
+        .modal-title.system::after {
+            background: #ff9800;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.05);
+            color: #666;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(0,0,0,0.1);
+            color: #333;
+            transform: rotate(90deg);
+        }
+
+        .modal-content {
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .modal-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .modal-section {
+            margin-bottom: 20px;
+        }
+
+        .modal-subtitle {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .modal-info-list {
+            list-style: none;
+        }
+
+        .modal-info-item {
+            position: relative;
+            padding-left: 25px;
+            margin-bottom: 12px;
+            color: #666;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .modal-container.active .modal-info-item {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .modal-info-item:nth-child(1) {
+            transition-delay: 0.1s;
+        }
+
+        .modal-info-item:nth-child(2) {
+            transition-delay: 0.2s;
+        }
+
+        .modal-info-item:nth-child(3) {
+            transition-delay: 0.3s;
+        }
+
+        .modal-info-item:nth-child(4) {
+            transition-delay: 0.4s;
+        }
+
+        .modal-info-item:nth-child(5) {
+            transition-delay: 0.5s;
+        }
+
+        .modal-info-item::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .modal-info-item.user::before {
+            color: #1976d2;
+        }
+
+        .modal-info-item.restaurant::before {
+            color: #9c27b0;
+        }
+
+        .modal-info-item.delivery::before {
+            color: #4caf50;
+        }
+
+        .modal-info-item.system::before {
+            color: #ff9800;
+        }
+
+        .modal-image {
+            width: 100%;
+            border-radius: 8px;
+            margin: 10px 0;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .modal-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .modal-tab:hover {
+            background: #f5f5f5;
+        }
+
+        .modal-tab.active {
+            border-bottom-color: #1976d2;
+            color: #1976d2;
+        }
+
+        .modal-panel {
+            display: none;
+        }
+
+        .modal-panel.active {
+            display: block;
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            color: #555;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            border-color: #1976d2;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+        }
+
+        .form-textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .status-tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            margin-right: 5px;
+        }
+
+        .status-pending {
+            background: #ff9800;
+        }
+
+        .status-processing {
+            background: #2196f3;
+        }
+
+        .status-completed {
+            background: #4caf50;
+        }
+
+        .status-rejected {
+            background: #f44336;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: #1976d2;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1565c0;
+            box-shadow: 0 3px 10px rgba(25, 118, 210, 0.3);
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #43a047;
+            box-shadow: 0 3px 10px rgba(76, 175, 80,.3);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53935;
+            box-shadow: 0 3px 10px rgba(244, 67, 54, 0.3);
+        }
+
+        @keyframes gradientMove {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes arrowFlow {
+            0% {
+                height: 0;
+            }
+            100% {
+                height: 100%;
+            }
+        }
+
+        @keyframes arrowPoint {
+            0% {
+                opacity: 0;
+            }
+            70% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            }
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 1200px) {
+            .container {
+                padding: 20px;
+            }
+            .main-title {
+                font-size: 28px;
+            }
+            .flow-column {
+                min-width: 45%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            .main-title {
+                font-size: 24px;
+            }
+            .control-btn {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+            .flow-column {
+                min-width: 100%;
+            }
+            .modal-container {
+                width: 95%;
+                padding: 20px;
+            }
+        }
+
+        /* 门店地图样式优化 */
+        .map-container {
+            position: relative;
+            height: 400px;
+            background-color: #f5f9ff;
+            background-image: linear-gradient(rgba(100, 150, 255, 0.1) 1px, transparent 1px), 
+                             linear-gradient(90deg, rgba(100, 150, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+
+        .map-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: linear-gradient(rgba(100, 150, 255, 0.1) 1px, transparent 1px), 
+                             linear-gradient(90deg, rgba(100, 150, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-position: -1px -1px;
+        }
+
+        .map-location {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .map-location.user {
+            background: #4285f4;
+            color: white;
+            z-index: 11;
+        }
+
+        .map-location.restaurant {
+            background: #9c27b0;
+            color: white;
+        }
+
+        .map-location:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .location-icon {
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .pulse-animation {
+            position: relative;
+        }
+
+        .pulse-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(66, 133, 244, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        /* 店铺信息卡片样式优化 */
+        .store-info-card {
+            position: absolute;
+            top: 20px;
+            right: 60px;
+            width: 250px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            z-index: 20;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(-10px);
+            display: none;
+        }
+
+        .store-info-card.active {
+            opacity: 1;
+            transform: translateY(0);
+            display: block;
+        }
+
+        /* 添加距离线动画样式 */
+        .distance-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .distance-line:before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, #4285f4, #9c27b0);
+            transform-origin: left center;
+            animation: flowLine 2s infinite linear;
+        }
+
+        @keyframes flowLine {
+            0% {
+                transform: scaleX(0);
+                opacity: 0;
+            }
+            20% {
+                transform: scaleX(0.2);
+                opacity: 1;
+            }
+            100% {
+                transform: scaleX(1);
+                opacity: 0;
+            }
+        }
+
+        /* 添加距离标签样式 */
+        .distance-label {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            z-index: 6;
+            pointer-events: none;
+        }
+
+        .info-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: #9c27b0;
+            color: white;
+        }
+
+        .info-card-title {
+            margin: 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .info-card-close {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s ease;
+        }
+
+        .info-card-close:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .info-card-content {
+            padding: 15px;
+        }
+
+        .info-card-rating {
+            font-size: 14px;
+            color: #ffb400;
+            margin-bottom: 8px;
+        }
+
+        .info-card-address, .info-card-hours, .info-card-phone {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 6px;
+        }
+
+        .info-card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .info-tag {
+            padding: 3px 8px;
+            background: #f0f0f0;
+            color: #555;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .info-card-footer {
+            display: flex;
+            gap: 10px;
+            padding: 10px 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .info-card-btn {
+            flex: 1;
+            padding: 8px 0;
+            background: #f5f5f5;
+            border: none;
+            border-radius: 5px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .info-card-btn:hover {
+            background: #eee;
+        }
+
+        .info-btn-primary {
+            background: #9c27b0;
+            color: white;
+        }
+
+        .info-btn-primary:hover {
+            background: #7b1fa2;
+        }
+
+        /* 店铺列表样式优化 */
+        .store-selection-container {
+            margin-bottom: 30px;
+        }
+
+        .store-filter {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 20px;
+            background-color: #f5f5f5;
+            color: #666;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .filter-btn.active {
+            background-color: #4285f4;
+            color: white;
+        }
+
+        .store-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 12px;
+        }
+
+        .store-list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .store-list-item.active {
+            border: 2px solid #4285f4;
+            background-color: rgba(66, 133, 244, 0.05);
+        }
+
+        .store-list-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .store-icon {
+            width: 36px;
+            height: 36px;
+            background-color: #9c27b0;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .store-content {
+            flex: 1;
+        }
+
+        .store-name {
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 5px 0;
+            font-size: 14px;
+        }
+
+        .store-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .store-distance {
+            color: #666;
+        }
+
+        .store-rating {
+            color: #ffb400;
+        }
+
+        .store-status {
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+
+        .store-status.open {
+            background-color: rgba(76, 175, 80, 0.1);
+            color: #4caf50;
+        }
+
+        .store-status.closed {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+        }
+
+        /* 地图界面右侧区域样式优化 */
+        .map-sidebar {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50px;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+            z-index: 5;
+        }
+
+        .sidebar-button {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+            color: #666;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .sidebar-button i {
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .sidebar-button.active {
+            background: #4285f4;
+            color: white;
+        }
+
+        .distance-indicator {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #555;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 5;
+        }
+
+        .store-detail-card {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 280px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            z-index: 20;
+            transform: translateY(-10px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .store-detail-card.visible {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .store-detail-header {
+            padding: 15px;
+            background: linear-gradient(135deg, #a64dff 0%, #8c42e0 100%);
+            color: white;
+            position: relative;
+        }
+
+        .store-detail-header h3 {
+            margin: 0 0 5px 0;
+            font-size: 18px;
+        }
+
+        .store-detail-header .close-detail {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0.8;
+            transition: all 0.2s ease;
+        }
+
+        .store-detail-header .close-detail:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .store-detail-header .rating {
+            display: flex;
+            align-items: center;
+        }
+
+        .store-detail-header .rating i {
+            color: #ffb400;
+            margin-right: 3px;
+        }
+
+        .store-detail-content {
+            padding: 15px;
+        }
+
+        .store-detail-content .info-row {
+            display: flex;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .store-detail-content .info-row i {
+            width: 20px;
+            margin-right: 10px;
+            color: #a64dff;
+        }
+
+        .store-detail-content .info-row .label {
+            font-weight: 600;
+            margin-right: 5px;
+            color: #333;
+        }
+
+        .store-detail-actions {
+            display: flex;
+            padding: 0 15px 15px;
+            gap: 10px;
+        }
+
+        .store-detail-actions button {
+            flex: 1;
+            padding: 10px 0;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .store-detail-actions button.navigate {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .store-detail-actions button.select-store {
+            background-color: #4285f4;
+            color: white;
+        }
+
+        .store-detail-actions button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .store-detail-content .promotion {
+            margin-top: 15px;
+            background-color: #fff8e1;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 13px;
+        }
+
+        .store-detail-content .promotion .title {
+            color: #ff8f00;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+        }
+
+        .store-detail-content .promotion .title i {
+            margin-right: 5px;
+        }
+
+        .store-gallery {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding: 0 15px 15px;
+            scrollbar-width: thin;
+        }
+
+        .store-gallery::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .store-gallery::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 2px;
+        }
+
+        .store-gallery-item {
+            width: 80px;
+            height: 60px;
+            border-radius: 6px;
+            background-color: #f5f5f5;
+            flex-shrink: 0;
+            background-size: cover;
+            background-position: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .store-gallery-item:hover {
+            transform: scale(1.05);
+        }
+
+        .map-route {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .map-route path {
+            stroke: #4285f4;
+            stroke-width: 3;
+            stroke-dasharray: 8, 4;
+            fill: none;
+            stroke-linecap: round;
+            animation: dash 30s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -1000;
+            }
+        }
+
+        .cooking-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .cooking-option {
+            flex: 1;
+            min-width: 100px;
+            max-width: 150px;
+            padding: 15px;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .cooking-option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .cooking-option.selected {
+            background: #f5f5f5;
+            border: 2px solid #1976d2;
+            transform: translateY(-3px);
+        }
+
+        .cooking-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+
+        .cooking-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .cooking-desc {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="main-title">牛排自由业务流程框架</h1>
+            <p class="subtitle">交互式框架展示完整业务流程</p>
+        </div>
+
+        <div class="control-panel">
+            <button class="control-btn active" data-section="overview">
+                <i class="icon">📊</i>整体流程
+            </button>
+            <button class="control-btn" data-section="registration">
+                <i class="icon">📝</i>注册与登录
+            </button>
+            <button class="control-btn" data-section="stores">
+                <i class="icon">🏪</i>门店选择
+            </button>
+            <button class="control-btn" data-section="order">
+                <i class="icon">🛒</i>下单流程
+            </button>
+            <button class="control-btn" data-section="payment">
+                <i class="icon">💳</i>支付流程
+            </button>
+            <button class="control-btn" data-section="delivery">
+                <i class="icon">🚚</i>配送与验收
+            </button>
+            <button class="control-btn" data-section="analytics">
+                <i class="icon">📈</i>数据统计
+            </button>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item" data-role="user">
+                <div class="legend-color" style="background: #1976d2;"></div>
+                <span>消费者</span>
+            </div>
+            <div class="legend-item" data-role="restaurant">
+                <div class="legend-color" style="background: #9c27b0;"></div>
+                <span>餐饮店</span>
+            </div>
+            <div class="legend-item" data-role="delivery">
+                <div class="legend-color" style="background: #4caf50;"></div>
+                <span>牛肉配送店</span>
+            </div>
+            <div class="legend-item" data-role="system">
+                <div class="legend-color" style="background: #ff9800;"></div>
+                <span>系统处理</span>
+            </div>
+        </div>
+
+        <!-- 流程内容将通过JavaScript动态加载 -->
+        <div class="flow-container" id="flowContainer">
+            <!-- 内容将根据选择的部分动态生成 -->
+        </div>
+    </div>
+
+    <!-- 弹窗详情 -->
+    <div id="modalOverlay" class="modal-overlay"></div>
+    <div id="modalContainer" class="modal-container"></div>
+
+    <!-- 在body添加地图交互组件 -->
+    <div class="modal-content" id="store_selection_detail">
+        <div class="modal-header">
+            <h3>门店选择与地图浏览</h3>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="store-filter">
+                <button class="active">全部门店</button>
+                <button>距离最近</button>
+                <button>评分最高</button>
+                <button>优惠活动</button>
+                <button>可预约</button>
+            </div>
+            
+            <div class="map-container">
+                <div class="map-background"></div>
+                <div class="map-grid"></div>
+                <div class="map-circle"></div>
+                <div class="map-center">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                
+                <!-- 路线图 -->
+                <svg class="map-route" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path d="M50,50 Q60,45 60,40" stroke="#4285f4" stroke-width="3" stroke-dasharray="8,4" fill="none" stroke-linecap="round"></path>
+                </svg>
+                
+                <!-- 餐厅标记 -->
+                <div class="store-marker restaurant" style="top: 30%; left: 60%;" data-id="store1">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div class="store-marker restaurant" style="top: 45%; left: 70%;" data-id="store2">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div class="store-marker restaurant" style="top: 60%; left: 40%;" data-id="store3">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                
+                <!-- 用户位置标记 -->
+                <div class="store-marker user" style="top: 50%; left: 50%;">
+                    <i class="fas fa-user"></i>
+                </div>
+                
+                <!-- 餐厅信息卡片 -->
+                <div class="store-info-card" style="top: 20%; left: 62%;">
+                    <h4>牛排自由 - 融创店</h4>
+                    <div class="rating">★★★★☆ 4.8</div>
+                    <div class="address">融创中心购物广场3层301铺</div>
+                    <div class="status open">营业中 10:00-22:00</div>
+                    <div class="actions">
+                        <button>详情</button>
+                        <button class="select">选择</button>
+                    </div>
+                </div>
+                
+                <!-- 地图右侧栏 -->
+                <div class="map-sidebar">
+                    <div class="sidebar-button active">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <div class="sidebar-button">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <div class="sidebar-button">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="sidebar-button">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="sidebar-button">
+                        <i class="fas fa-cog"></i>
+                    </div>
+                </div>
+                
+                <!-- 距离指示器 -->
+                <div class="distance-indicator">
+                    <i class="fas fa-walking"></i> 距离最近门店: 500米 (步行约7分钟)
+                </div>
+                
+                <!-- 店铺详情卡片 -->
+                <div class="store-detail-card" id="storeDetail">
+                    <div class="store-detail-header">
+                        <h3>牛排自由 - 融创店</h3>
+                        <div class="rating">
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star"></i>
+                            <i class="fas fa-star-half-alt"></i>
+                            <span>4.8 (1208条评价)</span>
+                        </div>
+                        <div class="close-detail">
+                            <i class="fas fa-times"></i>
+                        </div>
+                    </div>
+                    <div class="store-gallery">
+                        <div class="store-gallery-item" style="background-color: #a64dff;"></div>
+                        <div class="store-gallery-item" style="background-color: #9542e0;"></div>
+                        <div class="store-gallery-item" style="background-color: #8339cc;"></div>
+                        <div class="store-gallery-item" style="background-color: #732eb8;"></div>
+                    </div>
+                    <div class="store-detail-content">
+                        <div class="info-row">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <div>融创中心购物广场3层301铺</div>
+                        </div>
+                        <div class="info-row">
+                            <i class="fas fa-phone"></i>
+                            <div>联系电话: 0551-65335577</div>
+                        </div>
+                        <div class="info-row">
+                            <i class="fas fa-clock"></i>
+                            <div>营业时间: 10:00-22:00</div>
+                        </div>
+                        <div class="info-row">
+                            <i class="fas fa-walking"></i>
+                            <div>距离您: 500米 (步行约7分钟)</div>
+                        </div>
+                        <div class="promotion">
+                            <div class="title">
+                                <i class="fas fa-tag"></i>店铺活动
+                            </div>
+                            <div>新会员首单立减30元，满200减20元</div>
+                        </div>
+                    </div>
+                    <div class="store-detail-actions">
+                        <button class="navigate">
+                            <i class="fas fa-directions"></i> 导航
+                        </button>
+                        <button class="select-store">
+                            <i class="fas fa-check"></i> 选择此店
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="map-controls">
+                    <button><i class="fas fa-plus"></i></button>
+                    <button><i class="fas fa-minus"></i></button>
+                    <button><i class="fas fa-location-arrow"></i></button>
+                </div>
+            </div>
+            
+            <div class="store-list">
+                <div class="store-list-item">
+                    <div class="store-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <div class="store-content">
+                        <h4 class="store-name">牛排自由 - 融创店</h4>
+                        <div class="store-info">
+                            <span class="store-distance">500m</span>
+                            <span class="store-rating">★★★★☆ 4.8</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="store-list-item">
+                    <div class="store-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <div class="store-content">
+                        <h4 class="store-name">牛排自由 - 万达广场店</h4>
+                        <div class="store-info">
+                            <span class="store-distance">1.2km</span>
+                            <span class="store-rating">★★★★★ 4.9</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="store-list-item">
+                    <div class="store-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <div class="store-content">
+                        <h4 class="store-name">牛排自由 - 奥体中心店</h4>
+                        <div class="store-info">
+                            <span class="store-distance">2.5km</span>
+                            <span class="store-rating">★★★★☆ 4.7</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加Font Awesome图标库 -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
+    <script>
+        // 流程数据
+        const flowData = {
+            overview: {
+                title: "牛排自由业务流程框架概览",
+                description: "高品质牛肉供应链与厨房餐饮一站式服务流程",
+                nodes: [
+                    {
+                        id: "registration",
+                        title: "用户与商家入驻",
+                        subtitle: "三方角色注册认证流程",
+                        role: "system",
+                        icon: "📝"
+                    },
+                    {
+                        id: "stores",
+                        title: "门店选择与地图浏览",
+                        subtitle: "根据地理位置选择最近门店",
+                        role: "user",
+                        icon: "🗺️"
+                    },
+                    {
+                        id: "order",
+                        title: "堂食预约与外卖下单",
+                        subtitle: "在线浏览菜单与订单管理",
+                        role: "user",
+                        icon: "🍽️"
+                    },
+                    {
+                        id: "payment",
+                        title: "多渠道支付",
+                        subtitle: "安全便捷的支付流程",
+                        role: "user",
+                        icon: "💳"
+                    },
+                    {
+                        id: "delivery",
+                        title: "食材配送与质检",
+                        subtitle: "高品质牛排食材配送与验收",
+                        role: "delivery",
+                        icon: "🚚"
+                    },
+                    {
+                        id: "analytics",
+                        title: "数据统计与分析",
+                        subtitle: "运营数据实时监控与分析",
+                        role: "system",
+                        icon: "📊"
+                    }
+                ]
+            },
+            registration: {
+                title: "用户与商家注册流程",
+                description: "三方角色注册与审核认证流程",
+                nodes: []  // 详情已在createRegistrationSectionHTML中定义
+            },
+            stores: {
+                title: "门店选择与地图浏览",
+                description: "浏览附近门店与店铺详情",
+                nodes: []  // 详情已在createStoresHTML中定义
+            },
+            order: {
+                title: "下单流程",
+                description: "堂食预约与外卖下单的完整流程",
+                nodes: []  // 详情已在createOrderSectionHTML中定义
+            },
+            payment: {
+                title: "支付流程",
+                description: "多渠道支付与订单状态更新",
+                nodes: []  // 详情已在createPaymentSectionHTML中定义
+            },
+            delivery: {
+                title: "配送与验收流程",
+                description: "牛肉配送、验收与质量控制",
+                nodes: [
+                    {
+                        id: "delivery_prepare",
+                        title: "食材准备",
+                        subtitle: "备货与包装",
+                        role: "delivery",
+                        icon: "📦"
+                    },
+                    {
+                        id: "delivery_dispatch",
+                        title: "配送安排",
+                        subtitle: "规划配送路线与时间",
+                        role: "delivery",
+                        icon: "🚚"
+                    },
+                    {
+                        id: "delivery_tracking",
+                        title: "配送追踪",
+                        subtitle: "实时监控配送状态",
+                        role: "delivery",
+                        icon: "📍"
+                    },
+                    {
+                        id: "receiving",
+                        title: "食材接收",
+                        subtitle: "餐厅接收配送食材",
+                        role: "restaurant",
+                        icon: "📥"
+                    },
+                    {
+                        id: "quality_check",
+                        title: "质量检查",
+                        subtitle: "检查包装完好与食材新鲜度",
+                        role: "restaurant",
+                        icon: "✅"
+                    },
+                    {
+                        id: "acceptance",
+                        title: "验收确认",
+                        subtitle: "签收或拒收与拍照存证",
+                        role: "restaurant",
+                        icon: "📝"
+                    },
+                    {
+                        id: "status_sync",
+                        title: "状态同步",
+                        subtitle: "各方状态实时更新",
+                        role: "system",
+                        icon: "🔄"
+                    },
+                    {
+                        id: "food_preparation",
+                        title: "食物制作",
+                        subtitle: "根据订单制作食品",
+                        role: "restaurant",
+                        icon: "👨‍🍳"
+                    },
+                    {
+                        id: "customer_receive",
+                        title: "顾客享用",
+                        subtitle: "顾客接收并享用食品",
+                        role: "user",
+                        icon: "😋"
+                    }
+                ]
+            },
+            analytics: {
+                title: "数据统计与分析",
+                description: "运营数据与用户行为分析",
+                nodes: [
+                    {
+                        id: "data_collection",
+                        title: "数据采集",
+                        subtitle: "用户行为与交易数据采集",
+                        role: "system",
+                        icon: "📊"
+                    },
+                    {
+                        id: "data_processing",
+                        title: "数据处理",
+                        subtitle: "数据清洗与初步分析",
+                        role: "system",
+                        icon: "🔍"
+                    },
+                    {
+                        id: "data_analysis",
+                        title: "数据分析",
+                        subtitle: "深度分析与洞察提取",
+                        role: "system",
+                        icon: "📈"
+                    },
+                    {
+                        id: "business_insights",
+                        title: "商业洞察",
+                        subtitle: "业务趋势与用户偏好分析",
+                        role: "system",
+                        icon: "💡"
+                    },
+                    {
+                        id: "operational_optimization",
+                        title: "运营优化",
+                        subtitle: "基于数据的运营决策支持",
+                        role: "system",
+                        icon: "⚙️"
+                    },
+                    {
+                        id: "personalization",
+                        title: "个性化推荐",
+                        subtitle: "为用户提供个性化内容",
+                        role: "system",
+                        icon: "🎯"
+                    },
+                    {
+                        id: "restaurant_analytics",
+                        title: "餐厅数据分析",
+                        subtitle: "销售、评价等数据分析",
+                        role: "restaurant",
+                        icon: "🍽️"
+                    },
+                    {
+                        id: "delivery_analytics",
+                        title: "配送数据分析",
+                        subtitle: "配送效率与质量分析",
+                        role: "delivery",
+                        icon: "🚚"
+                    },
+                    {
+                        id: "marketing_strategy",
+                        title: "营销策略",
+                        subtitle: "基于数据的精准营销",
+                        role: "system",
+                        icon: "📢"
+                    }
+                ]
+            }
+        };
+
+        // 详情数据
+        const detailsData = {
+            registration: {
+                title: "用户与商家注册流程",
+                role: "system",
+                sections: [
+                    {
+                        title: "消费者注册",
+                        items: [
+                            "手机号注册：输入手机号并通过短信验证",
+                            "微信授权登录：通过微信账号快速登录",
+                            "第三方账号登录：支持其他第三方账号授权",
+                            "个人信息完善：设置昵称、头像等基本信息",
+                            "地址管理：添加常用收货地址和联系方式"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "餐饮店注册",
+                        items: [
+                            "基本信息：填写店铺名称、经营地址、联系方式",
+                            "资质上传：营业执照、食品经营许可证扫描件",
+                            "店铺照片：上传门店环境、厨房等照片",
+                            "服务范围：设置配送范围和营业时间",
+                            "协议签署：签署平台入驻协议和服务条款"
+                        ],
+                        role: "restaurant"
+                    },
+                    {
+                        title: "牛肉配送店注册",
+                        items: [
+                            "供应商信息：填写公司名称、经营地址、联系方式",
+                            "资质认证：营业执照、食品流通许可证等",
+                            "产品资质：上传产品来源证明、质量认证",
+                            "配送能力：配送范围、时效和运力说明",
+                            "协议签署：签署食材供应协议和质量保证条款"
+                        ],
+                        role: "delivery"
+                    },
+                    {
+                        title: "系统审核流程",
+                        items: [
+                            "资料审核：平台审核上传的各类证照和信息",
+                            "实地考察：对重要合作方进行现场考察",
+                            "资质验证：通过公共信息渠道验证资质真实性",
+                            "审核结果：通过、有条件通过或拒绝",
+                            "账号激活：审核通过后账号正式激活并开始运营"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            
+            // 添加用户注册相关节点的详细信息
+            user_register: {
+                title: "用户注册与登录",
+                role: "user",
+                sections: [
+                    {
+                        title: "注册方式",
+                        items: [
+                            "手机号注册：输入手机号并通过短信验证",
+                            "微信授权登录：通过微信账号快速登录",
+                            "第三方账号登录：支持其他第三方账号授权"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "登录方式",
+                        items: [
+                            "消费者登录采用简单的手机号/微信登录方式",
+                            "餐饮店和牛肉配送店在注册审核通过后使用相应账号登录",
+                            "支持记住密码和自动登录功能"
+                        ],
+                        role: "user"
+                    }
+                ]
+            },
+            
+            store_selection: {
+                title: "门店选择与地图浏览",
+                role: "user",
+                sections: [
+                    {
+                        title: "地图功能",
+                        items: [
+                            "系统利用地图API获取用户当前位置",
+                            "在3公里范围内检索入驻的餐饮门店",
+                            "前端以地图形式展示这些门店及其位置信息",
+                            "显示用户与门店的距离及预计到达时间"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "选择店铺",
+                        items: [
+                            "从展示的门店列表中选择餐饮门店",
+                            "进入店铺详情页，了解店铺信息",
+                            "查看店铺评分及促销活动",
+                            "查看营业状态和营业时间"
+                        ],
+                        role: "user"
+                    }
+                ]
+            },
+            
+            service_type: {
+                title: "服务类型选择",
+                role: "user",
+                sections: [
+                    {
+                        title: "服务类型",
+                        items: [
+                            "堂食预约：在店内就餐，需提前预约",
+                            "外卖配送：由餐厅将食物配送至指定地址",
+                            "自取服务：用户自行到店取餐",
+                            "特殊活动预约：节日特别活动或主题餐饮体验"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "不同服务类型差异",
+                        items: [
+                            "价格差异：堂食、外卖和自取的价格政策不同",
+                            "配送费：外卖需考虑配送距离和配送费",
+                            "时间要求：堂食需提前预约确认座位",
+                            "会员权益：不同服务类型的会员专享权益"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            
+            dine_in: {
+                title: "堂食预约",
+                role: "user",
+                sections: [
+                    {
+                        title: "预约服务",
+                        items: [
+                            "用户选择堂食服务，填写就餐时间",
+                            "填写就餐人数及联系方式信息",
+                            "选择包间或特殊座位需求",
+                            "完成预约下单"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "预约确认",
+                        items: [
+                            "系统确认预约后记录餐饮店预约信息",
+                            "生成预约确认码，可在到店时使用",
+                            "短信通知：发送预约确认短信",
+                            "提供修改或取消预约的选项"
+                        ],
+                        role: "restaurant"
+                    }
+                ]
+            },
+            
+            // 增加菜单浏览的详细信息
+            menu_browse: {
+                title: "商品浏览",
+                role: "user",
+                sections: [
+                    {
+                        title: "菜单浏览",
+                        items: [
+                            "在所选餐饮店中浏览牛排及其他食品的菜单",
+                            "按照分类查看不同类型的菜品",
+                            "查看菜品详情、配料和烹饪方式",
+                            "查看菜品评分和用户评价"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "筛选功能",
+                        items: [
+                            "根据菜品类型筛选（牛排、配菜、饮品等）",
+                            "根据价格区间筛选",
+                            "根据热门程度筛选",
+                            "根据优惠活动筛选"
+                        ],
+                        role: "user"
+                    }
+                ]
+            },
+            
+            // 增加商品详情的信息
+            product_detail: {
+                title: "商品详情",
+                role: "user",
+                sections: [
+                    {
+                        title: "详情展示",
+                        items: [
+                            "商品图片：展示高清商品图片",
+                            "基本信息：名称、价格、规格等",
+                            "商品描述：详细介绍商品特点和口味",
+                            "食材来源：说明牛肉来源和品质等级"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "选择规格",
+                        items: [
+                            "牛排规格：选择牛排大小和重量",
+                            "熟度选择：选择牛肉加工成熟度（五成熟、六成熟等）",
+                            "口味选择：选择口味偏好和特殊要求",
+                            "加料选择：选择是否添加额外配料"
+                        ],
+                        role: "user"
+                    }
+                ]
+            },
+            
+            cart: {
+                title: "购物车管理",
+                role: "user",
+                sections: [
+                    {
+                        title: "购物车功能",
+                        items: [
+                            "将想要的商品加入购物车",
+                            "调整购物车中商品的数量",
+                            "从购物车中移除不需要的商品",
+                            "保存购物车内容供下次使用"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "购物车信息",
+                        items: [
+                            "商品列表：显示已添加的所有商品",
+                            "数量和金额：每种商品的数量和小计金额",
+                            "食材加工费用：显示牛肉加工的相关费用",
+                            "场地服务费：显示堂食服务的相关费用"
+                        ],
+                        role: "user"
+                    }
+                ]
+            },
+            
+            order_confirm: {
+                title: "订单确认",
+                role: "user",
+                sections: [
+                    {
+                        title: "订单信息确认",
+                        items: [
+                            "确认购物车中的商品清单、数量、金额",
+                            "确认食材加工费用和场地服务费",
+                            "选择牛肉加工成熟度（三成熟、四成熟、五成熟、六成熟、七成熟、全熟）",
+                            "填写备注和特殊要求",
+                            "选择优惠券或满减活动"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "预约时间",
+                        items: [
+                            "预约餐饮店就餐时间",
+                            "牛肉配送时间的设置",
+                            "系统检查时间冲突并提供建议",
+                            "生成订单，进入支付环节"
+                        ],
+                        role: "user"
+                    }
+                ]
+            },
+            
+            payment_method: {
+                title: "支付方式选择",
+                role: "user",
+                sections: [
+                    {
+                        title: "在线支付方式",
+                        items: [
+                            "微信支付：使用微信账户进行支付",
+                            "支付宝：使用支付宝账户进行支付",
+                            "银行卡支付：使用储蓄卡或信用卡支付",
+                            "平台余额支付：使用账户余额支付"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "支付安全与优惠",
+                        items: [
+                            "安全保障：支付环节的加密和安全措施",
+                            "支付优惠：特定支付方式的专属优惠",
+                            "失败处理：支付失败的补救措施",
+                            "退款政策：订单取消后的退款流程"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            
+            payment_process: {
+                title: "支付处理",
+                role: "system",
+                sections: [
+                    {
+                        title: "支付流程",
+                        items: [
+                            "用户选择支付方式完成在线支付",
+                            "系统处理支付请求并验证交易信息",
+                            "后端接收支付回调更新订单状态",
+                            "系统生成支付交易凭证和订单编号"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "支付状态与通知",
+                        items: [
+                            "支付成功：订单状态更新为已支付",
+                            "支付通知：向用户发送支付成功通知",
+                            "订单同步：将订单信息同步至相关系统",
+                            "异常处理：处理支付过程中的异常情况"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            
+            delivery_prepare: {
+                title: "食材准备",
+                role: "delivery",
+                sections: [
+                    {
+                        title: "备货流程",
+                        items: [
+                            "订单接收：接收系统分配的配送任务",
+                            "备货清单：根据订单生成备货清单",
+                            "食材拣选：从库存中拣选新鲜食材",
+                            "质量检查：检查食材质量与保质期",
+                            "数量核对：确认食材数量符合订单要求"
+                        ],
+                        role: "delivery"
+                    },
+                    {
+                        title: "包装流程",
+                        items: [
+                            "专业包装：使用适合牛肉的专业包装材料",
+                            "温度控制：根据季节使用保温或冷藏包装",
+                            "密封处理：确保包装完好无损",
+                            "标签标识：贴上订单信息与食材详情标签",
+                            "出库检查：确认包装完整性后出库"
+                        ],
+                        role: "delivery"
+                    }
+                ]
+            },
+            
+            delivery_dispatch: {
+                title: "配送安排",
+                role: "delivery",
+                sections: [
+                    {
+                        title: "配送任务",
+                        items: [
+                            "牛肉配送店根据分配任务准备食材出库",
+                            "系统自动根据餐饮店位置，分配就近的牛肉配送店",
+                            "在3公里范围内进行食材配送",
+                            "更新配送任务与订单状态（如\"待发货\"）"
+                        ],
+                        role: "delivery"
+                    },
+                    {
+                        title: "配送过程",
+                        items: [
+                            "将牛肉食材出库并发货",
+                            "状态更新为\"已发货\"",
+                            "向餐饮店后端推送配送信息",
+                            "保持食材新鲜度和质量"
+                        ],
+                        role: "delivery"
+                    }
+                ]
+            },
+            
+            quality_check: {
+                title: "质量检查",
+                role: "restaurant",
+                sections: [
+                    {
+                        title: "验收标准",
+                        items: [
+                            "餐饮店收到配送提示后进入\"待收货\"状态",
+                            "工作人员对到货食材进行检查",
+                            "核对包装日期及其它质量指标",
+                            "确保食材符合安全标准和品质要求"
+                        ],
+                        role: "restaurant"
+                    },
+                    {
+                        title: "检查处理",
+                        items: [
+                            "检查无误，在系统内完成签收（\"已收货\"）",
+                            "上传签收照片作为凭证",
+                            "若发现问题，填写拒收原因",
+                            "上传拒收照片，并启动退回流程"
+                        ],
+                        role: "restaurant"
+                    }
+                ]
+            },
+            
+            status_sync: {
+                title: "状态同步",
+                role: "system",
+                sections: [
+                    {
+                        title: "状态管理",
+                        items: [
+                            "用户端、餐饮店后端和牛肉配送店后端分别维护订单状态",
+                            "状态包括\"代发货\"、\"待收货\"、\"已收货\"等",
+                            "实时推送状态变更信息",
+                            "各方系统保持数据一致性"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "消息通知",
+                        items: [
+                            "用户端会收到提示信息",
+                            "如\"牛肉食材已签收\"（附签收照片）",
+                            "或\"牛肉食材被拒收\"（附拒收原因及照片）",
+                            "保证信息透明和流程追踪"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            
+            data_analysis: {
+                title: "数据统计与分析",
+                role: "system",
+                sections: [
+                    {
+                        title: "数据处理",
+                        items: [
+                            "建立数据仓库，定期清洗和汇总多维数据",
+                            "包括订单、用户、商品、支付等信息",
+                            "利用定时任务或实时计算生成指标",
+                            "提供报表API接口供前端展示"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "分析应用",
+                        items: [
+                            "在管理后台提供可视化报表",
+                            "展示订单量、销售额、热门菜品、用户增长等数据",
+                            "支持报表数据导出（CSV、Excel、PDF）",
+                            "数据驱动业务决策和优化"
+                        ],
+                        role: "system"
+                    }
+                ]
+            }
+        };
+
+        // DOM元素
+        const flowContainer = document.getElementById('flowContainer');
+        const controlButtons = document.querySelectorAll('.control-btn');
+        const modalOverlay = document.getElementById('modalOverlay');
+        const modalContainer = document.getElementById('modalContainer');
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM已加载，开始初始化...");
+            
+            // 移除任何加载信息
+            flowContainer.innerHTML = "";
+            
+            // 默认显示概览
+            showSection('overview');
+            console.log("初始部分已显示");
+            
+            // 为控制按钮添加事件
+            controlButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const section = btn.dataset.section;
+                    console.log("切换到部分:", section);
+                    
+                    // 更新按钮状态
+                    controlButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // 切换显示的部分
+                    showSection(section);
+                });
+            });
+            
+            // 为图例添加高亮效果
+            document.querySelectorAll('.legend-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const role = item.dataset.role;
+                    console.log("高亮角色:", role);
+                    // 高亮显示对应角色的节点
+                    document.querySelectorAll(`.flow-node.${role}`).forEach(node => {
+                        node.classList.add('highlight');
+                        setTimeout(() => {
+                            node.classList.remove('highlight');
+                        }, 1500);
+                    });
+                });
+            });
+            
+            // 为模态框添加关闭事件
+            modalOverlay.addEventListener('click', hideModal);
+            
+            // 尝试查找并添加关闭按钮事件
+            const modalClose = document.querySelector('.modal-close');
+            if (modalClose) {
+                modalClose.addEventListener('click', hideModal);
+                console.log("模态框关闭按钮事件已添加");
+            } else {
+                console.log("未找到模态框关闭按钮");
+            }
+            
+            console.log("初始化完成");
+        });
+        
+        // 显示指定部分
+        function showSection(sectionId) {
+            const section = flowData[sectionId];
+            if (!section) return;
+            
+            // 清空容器内容，移除加载信息
+            flowContainer.innerHTML = "";
+            
+            let html = `
+                <div class="flow-section active" id="${sectionId}Section">
+                    <h2 style="text-align: center; margin-bottom: 30px;">${section.title}</h2>
+                    <p style="text-align: center; margin-bottom: 30px; color: #666;">${section.description}</p>
+            `;
+            
+            // 概览部分特殊处理
+            if (sectionId === 'overview') {
+                html += createOverviewHTML(section.nodes);
+            } else if (sectionId === 'stores') {
+                html += createStoresHTML();
+            } else {
+                // 其他部分通用处理
+                html += createDetailedSectionHTML(sectionId);
+            }
+            
+            html += `</div>`;
+            
+            // 更新DOM
+            flowContainer.innerHTML = html;
+            
+            // 添加点击事件
+            setTimeout(() => {
+                // 为所有流程节点添加点击事件
+                document.querySelectorAll('.flow-node').forEach(node => {
+                    node.addEventListener('click', () => {
+                        const nodeId = node.dataset.id;
+                        showNodeDetails(nodeId);
+                    });
+                });
+                
+                // 为地图位置标记添加点击事件
+                document.querySelectorAll('.map-location').forEach(location => {
+                    if(location.dataset.id) {
+                        location.addEventListener('click', (e) => {
+                            e.stopPropagation(); // 防止事件冒泡
+                            showStoreDetail(location.dataset.id);
+                        });
+                    }
+                });
+                
+                // 为店铺列表项添加点击事件
+                document.querySelectorAll('.store-list-item').forEach((item, index) => {
+                    item.addEventListener('click', () => {
+                        // 移除所有激活状态
+                        document.querySelectorAll('.store-list-item').forEach(i => 
+                            i.classList.remove('active'));
+                        // 添加激活状态
+                        item.classList.add('active');
+                        // 显示店铺详情
+                        showStoreDetail('store' + (index + 1));
+                    });
+                });
+                
+                // 为店铺信息卡片的关闭按钮添加点击事件
+                const infoCardClose = document.querySelector('.info-card-close');
+                if(infoCardClose) {
+                    infoCardClose.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const infoCard = document.querySelector('.store-info-card');
+                        if(infoCard) {
+                            infoCard.classList.remove('active');
+                        }
+                    });
+                }
+            }, 100);
+        }
+        
+        // 创建概览HTML
+        function createOverviewHTML(nodes) {
+            let html = `<div class="flow-row">`;
+            
+            nodes.forEach((node, index) => {
+                html += `
+                    <div class="flow-node ${node.role}" data-id="${node.id}" style="animation-delay: ${index * 0.1}s">
+                        <div class="node-icon">${node.icon}</div>
+                        <h3 class="node-title">${node.title}</h3>
+                        <p class="node-subtitle">${node.subtitle}</p>
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+            return html;
+        }
+        
+        // 创建门店选择HTML
+        function createStoresHTML() {
+            // 这里仅在特定节点展示地图浏览功能
+            return `
+                <div class="map-container" id="storeMap">
+                    <div class="map-grid"></div>
+                    
+                    <!-- 路线图 -->
+                    <svg class="map-route" viewBox="0 0 100 100" preserveAspectRatio="none">
+                        <path d="M50,50 Q60,45 60,40" stroke="#4285f4" stroke-width="3" stroke-dasharray="8,4" fill="none" stroke-linecap="round"></path>
+                    </svg>
+                    
+                    <div class="map-location user pulse-animation" style="top: 50%; left: 50%;" title="当前位置">
+                        <i class="location-icon">📍</i>
+                        <div class="pulse-circle"></div>
+                    </div>
+                    <div class="map-location restaurant" style="top: 40%; left: 60%;" title="牛排自由·融创店" data-id="store1">
+                        <i class="location-icon">🍽️</i>
+                    </div>
+                    <div class="map-location restaurant" style="top: 60%; left: 55%;" title="牛排自由·金融街店" data-id="store2">
+                        <i class="location-icon">🍽️</i>
+                    </div>
+                    <div class="map-location restaurant" style="top: 45%; left: 40%;" title="牛排自由·中关村店" data-id="store3">
+                        <i class="location-icon">🍽️</i>
+                    </div>
+                    
+                    <!-- 添加距离线 -->
+                    <div class="distance-line" style="top: 50%; left: 50%; width: 14%; transform: rotate(35deg); transform-origin: left center;">
+                        <div class="distance-label" style="top: -15px; left: 50%;">500米</div>
+                    </div>
+                    <div class="distance-line" style="top: 50%; left: 50%; width: 10%; transform: rotate(170deg); transform-origin: left center;">
+                        <div class="distance-label" style="top: -15px; left: 50%;">1.2公里</div>
+                    </div>
+                    <div class="distance-line" style="top: 50%; left: 50%; width: 12%; transform: rotate(-8deg); transform-origin: left center;">
+                        <div class="distance-label" style="top: -15px; left: 50%;">2.5公里</div>
+                    </div>
+                    
+                    <div class="distance-indicator">距离最近门店：500米 (步行约7分钟)</div>
+                    <div class="map-sidebar">
+                        <div class="sidebar-button active" title="显示所有门店">
+                            <i>🏠</i>
+                        </div>
+                        <div class="sidebar-button" title="显示距离最近">
+                            <i>📍</i>
+                        </div>
+                        <div class="sidebar-button" title="筛选高评分">
+                            <i>⭐</i>
+                        </div>
+                        <div class="sidebar-button" title="显示优惠活动">
+                            <i>🏷️</i>
+                        </div>
+                        <div class="sidebar-button" title="可预约门店">
+                            <i>📅</i>
+                        </div>
+                    </div>
+                    
+                    <!-- 店铺信息卡片 -->
+                    <div class="store-info-card">
+                        <div class="info-card-header">
+                            <h3 class="info-card-title">牛排自由 · 融创店</h3>
+                            <div class="info-card-close">×</div>
+                        </div>
+                        <div class="info-card-content">
+                            <div class="info-card-rating">⭐⭐⭐⭐⭐ 4.8分 (1283条评价)</div>
+                            <div class="info-card-address">地址：融创中心购物广场3层301铺</div>
+                            <div class="info-card-hours">营业时间：10:00-22:00</div>
+                            <div class="info-card-phone">电话：010-12345678</div>
+                            <div class="info-card-tags">
+                                <span class="info-tag">人气爆棚</span>
+                                <span class="info-tag">可预约</span>
+                                <span class="info-tag">新店优惠</span>
+                            </div>
+                        </div>
+                        <div class="info-card-footer">
+                            <button class="info-card-btn info-btn-primary">选择此店</button>
+                            <button class="info-card-btn">查看详情</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="store-selection-container">
+                    <div class="store-filter">
+                        <button class="filter-btn active">全部门店</button>
+                        <button class="filter-btn">距离最近</button>
+                        <button class="filter-btn">评分最高</button>
+                        <button class="filter-btn">优惠活动</button>
+                        <button class="filter-btn">可预约</button>
+                    </div>
+                    <div class="store-list">
+                        <div class="store-list-item active" data-id="store1">
+                            <div class="store-icon">🍽️</div>
+                            <div class="store-content">
+                                <h4 class="store-name">牛排自由 · 融创店</h4>
+                                <div class="store-info">
+                                    <span class="store-distance">500m</span>
+                                    <span class="store-rating">⭐ 4.8</span>
+                                    <span class="store-status open">营业中</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="store-list-item" data-id="store2">
+                            <div class="store-icon">🍽️</div>
+                            <div class="store-content">
+                                <h4 class="store-name">牛排自由 · 金融街店</h4>
+                                <div class="store-info">
+                                    <span class="store-distance">1.2km</span>
+                                    <span class="store-rating">⭐ 4.7</span>
+                                    <span class="store-status open">营业中</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="store-list-item" data-id="store3">
+                            <div class="store-icon">🍽️</div>
+                            <div class="store-content">
+                                <h4 class="store-name">牛排自由 · 中关村店</h4>
+                                <div class="store-info">
+                                    <span class="store-distance">2.5km</span>
+                                    <span class="store-rating">⭐ 4.9</span>
+                                    <span class="store-status open">营业中</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="store-list-item">
+                            <div class="store-icon">🍽️</div>
+                            <div class="store-content">
+                                <h4 class="store-name">牛排自由 · 国贸店</h4>
+                                <div class="store-info">
+                                    <span class="store-distance">4.8km</span>
+                                    <span class="store-rating">⭐ 4.9</span>
+                                    <span class="store-status closed">已打烊</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flow-row">
+                    <div class="flow-column">
+                        <div class="flow-node user" data-id="location">
+                            <h3 class="node-title">位置服务</h3>
+                            <p class="node-subtitle">自动定位当前位置，显示3公里范围内店铺</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node user" data-id="store_selection">
+                            <h3 class="node-title">门店浏览</h3>
+                            <p class="node-subtitle">查看店铺评分、促销信息和菜单</p>
+                        </div>
+                    </div>
+                    <div class="flow-column">
+                        <div class="flow-node user" data-id="store_detail">
+                            <h3 class="node-title">店铺详情</h3>
+                            <p class="node-subtitle">查看店铺详细信息和用户评价</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node user" data-id="service_selection">
+                            <h3 class="node-title">服务方式选择</h3>
+                            <p class="node-subtitle">选择堂食预约或外卖配送</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 创建详细部分HTML
+        function createDetailedSectionHTML(sectionId) {
+            if (sectionId === 'order') {
+                return createOrderSectionHTML();
+            } else if (sectionId === 'payment') {
+                return createPaymentSectionHTML();
+            } else if (sectionId === 'registration') {
+                return createRegistrationSectionHTML();
+            } else if (sectionId === 'delivery') {
+                return createDeliverySectionHTML();
+            } else if (sectionId === 'analytics') {
+                return createAnalyticsSectionHTML();
+            }
+            
+            // 默认内容
+            return `<p style="text-align: center; padding: 50px; color: #666;">该部分框架内容正在准备中，请稍候...</p>`;
+        }
+        
+        // 创建下单流程HTML
+        function createOrderSectionHTML() {
+            let html = `
+                <div class="flow-row">
+                    <div class="flow-column">
+                        <div class="flow-node user" data-id="service_type">
+                            <h3 class="node-title">服务类型选择</h3>
+                            <p class="node-subtitle">堂食预约或外卖配送</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node user" data-id="dine_in">
+                            <h3 class="node-title">堂食预约</h3>
+                            <p class="node-subtitle">选择就餐时间和人数</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node user" data-id="menu_browse">
+                            <h3 class="node-title">商品浏览</h3>
+                            <p class="node-subtitle">查看牛排种类和其他食品</p>
+                        </div>
+                    </div>
+                    <div class="flow-column">
+                        <div class="flow-node user" data-id="product_detail">
+                            <h3 class="node-title">商品详情</h3>
+                            <p class="node-subtitle">查看详细规格和口味说明</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node user" data-id="cart">
+                            <h3 class="node-title">购物车管理</h3>
+                            <p class="node-subtitle">添加、删除商品和调整数量</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node user" data-id="order_confirm">
+                            <h3 class="node-title">订单确认</h3>
+                            <p class="node-subtitle">核对商品和填写备注</p>
+                        </div>
+                    </div>
+                    <div class="flow-column">
+                        <div class="flow-node user" data-id="coupons">
+                            <h3 class="node-title">优惠券选择</h3>
+                            <p class="node-subtitle">选择使用优惠券</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node user" data-id="delivery_time">
+                            <h3 class="node-title">配送时间</h3>
+                            <p class="node-subtitle">选择期望的配送时间</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node system" data-id="order_create">
+                            <h3 class="node-title">生成订单</h3>
+                            <p class="node-subtitle">系统生成正式订单</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <div class="btn btn-primary" onclick="showSection('payment')">进入支付流程 →</div>
+                </div>
+            `;
+            return html;
+        }
+        
+        // 创建支付流程HTML
+        function createPaymentSectionHTML() {
+            let html = `
+                <div class="flow-row">
+                    <div class="flow-column">
+                        <div class="flow-node user" data-id="payment_method">
+                            <h3 class="node-title">支付方式选择</h3>
+                            <p class="node-subtitle">选择在线支付方式</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node system" data-id="payment_process">
+                            <h3 class="node-title">支付处理</h3>
+                            <p class="node-subtitle">系统处理支付请求</p>
+                        </div>
+                    </div>
+                    <div class="flow-column">
+                        <div class="flow-node system" data-id="status_update">
+                            <h3 class="node-title">状态更新</h3>
+                            <p class="node-subtitle">订单变更为已支付</p>
+                            <div class="node-status status-pending">待处理</div>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node system" data-id="order_notify">
+                            <h3 class="node-title">订单通知</h3>
+                            <p class="node-subtitle">通知餐厅新订单</p>
+                            <div class="node-status status-processing">处理中</div>
+                        </div>
+                    </div>
+                    <div class="flow-column">
+                        <div class="flow-node restaurant" data-id="restaurant_confirm">
+                            <h3 class="node-title">餐厅确认</h3>
+                            <p class="node-subtitle">餐厅确认订单</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node system" data-id="delivery_assign">
+                            <h3 class="node-title">配送分配</h3>
+                            <p class="node-subtitle">分配牛肉配送任务</p>
+                            <div class="node-status status-completed">已完成</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <div class="btn btn-primary" onclick="showSection('delivery')">进入配送流程 →</div>
+                </div>
+            `;
+            return html;
+        }
+        
+        // 创建注册流程HTML
+        function createRegistrationSectionHTML() {
+            let html = `
+                <div class="flow-row">
+                    <div class="flow-column">
+                        <h3 style="text-align: center; margin-bottom: 15px; color: #1976d2;">消费者注册</h3>
+                        <div class="flow-node user" data-id="user_register">
+                            <h3 class="node-title">注册方式选择</h3>
+                            <p class="node-subtitle">手机号/微信/第三方账号</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node user" data-id="user_info">
+                            <h3 class="node-title">个人信息</h3>
+                            <p class="node-subtitle">设置昵称、头像等</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node user" data-id="user_address">
+                            <h3 class="node-title">地址管理</h3>
+                            <p class="node-subtitle">添加常用收货地址</p>
+                        </div>
+                    </div>
+                    <div class="flow-column">
+                        <h3 style="text-align: center; margin-bottom: 15px; color: #9c27b0;">餐饮店注册</h3>
+                        <div class="flow-node restaurant" data-id="restaurant_info">
+                            <h3 class="node-title">基本信息</h3>
+                            <p class="node-subtitle">店铺名称、地址、联系方式</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node restaurant" data-id="restaurant_qualification">
+                            <h3 class="node-title">资质上传</h3>
+                            <p class="node-subtitle">营业执照、许可证等</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node restaurant" data-id="restaurant_photos">
+                            <h3 class="node-title">店铺照片</h3>
+                            <p class="node-subtitle">门店环境、厨房等</p>
+                        </div>
+                    </div>
+                    <div class="flow-column">
+                        <h3 style="text-align: center; margin-bottom: 15px; color: #4caf50;">牛肉配送店注册</h3>
+                        <div class="flow-node delivery" data-id="delivery_info">
+                            <h3 class="node-title">供应商信息</h3>
+                            <p class="node-subtitle">公司资料与联系方式</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node delivery" data-id="delivery_qualification">
+                            <h3 class="node-title">资质认证</h3>
+                            <p class="node-subtitle">营业执照、许可证等</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node delivery" data-id="delivery_products">
+                            <h3 class="node-title">产品资质</h3>
+                            <p class="node-subtitle">产品来源与质量认证</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return html;
+        }
+        
+        // 创建配送验收流程HTML
+        function createDeliverySectionHTML() {
+            let html = `
+                <div class="flow-row">
+                    <div class="flow-column">
+                        <div class="flow-node delivery" data-id="delivery_prepare">
+                            <h3 class="node-title">食材准备</h3>
+                            <p class="node-subtitle">备货与包装</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node delivery" data-id="delivery_dispatch">
+                            <h3 class="node-title">配送安排</h3>
+                            <p class="node-subtitle">规划配送路线与时间</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node delivery" data-id="delivery_tracking">
+                            <h3 class="node-title">配送追踪</h3>
+                            <p class="node-subtitle">实时监控配送状态</p>
+                        </div>
+                    </div>
+                    <div class="flow-column">
+                        <div class="flow-node restaurant" data-id="receiving">
+                            <h3 class="node-title">食材接收</h3>
+                            <p class="node-subtitle">餐厅接收配送食材</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node restaurant" data-id="quality_check">
+                            <h3 class="node-title">质量检查</h3>
+                            <p class="node-subtitle">检查包装完好与食材新鲜度</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node restaurant" data-id="acceptance">
+                            <h3 class="node-title">验收确认</h3>
+                            <p class="node-subtitle">签收或拒收与拍照存证</p>
+                        </div>
+                    </div>
+                    <div class="flow-column">
+                        <div class="flow-node system" data-id="status_sync">
+                            <h3 class="node-title">状态同步</h3>
+                            <p class="node-subtitle">各方状态实时更新</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node restaurant" data-id="food_preparation">
+                            <h3 class="node-title">食物制作</h3>
+                            <p class="node-subtitle">根据订单制作食品</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node user" data-id="customer_receive">
+                            <h3 class="node-title">顾客享用</h3>
+                            <p class="node-subtitle">顾客接收并享用食品</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <div class="btn btn-primary" onclick="showSection('analytics')">进入数据统计分析 →</div>
+                </div>
+            `;
+            return html;
+        }
+        
+        // 创建数据统计流程HTML
+        function createAnalyticsSectionHTML() {
+            let html = `
+                <div class="flow-row">
+                    <div class="flow-column">
+                        <div class="flow-node system" data-id="data_collection">
+                            <h3 class="node-title">数据采集</h3>
+                            <p class="node-subtitle">用户行为与交易数据采集</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node system" data-id="data_processing">
+                            <h3 class="node-title">数据处理</h3>
+                            <p class="node-subtitle">数据清洗与初步分析</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node system" data-id="data_analysis">
+                            <h3 class="node-title">数据分析</h3>
+                            <p class="node-subtitle">深度分析与洞察提取</p>
+                        </div>
+                    </div>
+                    <div class="flow-column">
+                        <div class="flow-node system" data-id="business_insights">
+                            <h3 class="node-title">商业洞察</h3>
+                            <p class="node-subtitle">业务趋势与用户偏好分析</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node system" data-id="operational_optimization">
+                            <h3 class="node-title">运营优化</h3>
+                            <p class="node-subtitle">基于数据的运营决策支持</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node system" data-id="personalization">
+                            <h3 class="node-title">个性化推荐</h3>
+                            <p class="node-subtitle">为用户提供个性化内容</p>
+                        </div>
+                    </div>
+                    <div class="flow-column">
+                        <div class="flow-node restaurant" data-id="restaurant_analytics">
+                            <h3 class="node-title">餐厅数据分析</h3>
+                            <p class="node-subtitle">销售、评价等数据分析</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node delivery" data-id="delivery_analytics">
+                            <h3 class="node-title">配送数据分析</h3>
+                            <p class="node-subtitle">配送效率与质量分析</p>
+                        </div>
+                        <div class="flow-arrow"></div>
+                        <div class="flow-node system" data-id="marketing_strategy">
+                            <h3 class="node-title">营销策略</h3>
+                            <p class="node-subtitle">基于数据的精准营销</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <div class="btn btn-primary" onclick="showSection('overview')">返回整体流程 →</div>
+                </div>
+            `;
+            return html;
+        }
+        
+        // 显示节点详情
+        function showNodeDetails(nodeId) {
+            console.log("显示节点详情:", nodeId);
+            
+            // 特殊处理订单确认节点
+            if (nodeId === 'order_confirm') {
+                showOrderConfirmDetails();
+                return;
+            }
+            
+            // 特殊处理整体注册流程
+            if (nodeId === 'registration') {
+                showRegistrationDetails();
+                return;
+            }
+            
+            // 获取详情数据
+            const details = detailsData[nodeId];
+            
+            // 如果没有预设的详情数据，生成默认详情
+            if (!details) {
+                console.log("未找到节点详情数据，生成默认内容");
+                // 查找节点ID对应的流程数据
+                let nodeInfo = null;
+                for (const sectionKey in flowData) {
+                    const section = flowData[sectionKey];
+                    if (section.nodes) {
+                        const node = section.nodes.find(n => n.id === nodeId);
+                        if (node) {
+                            nodeInfo = node;
+                            break;
+                        }
+                    }
+                }
+                
+                // 生成默认详情内容
+                const defaultDetails = generateDefaultDetails(nodeId, nodeInfo);
+                
+                // 构建模态框HTML
+                let html = `
+                    <div class="modal-header">
+                        <h3 class="modal-title ${nodeInfo ? nodeInfo.role : 'system'}">${defaultDetails.title}</h3>
+                        <span class="modal-close">&times;</span>
+                    </div>
+                    <div class="modal-content">
+                        <div class="modal-section">
+                            <h4 class="modal-subtitle">${defaultDetails.subtitle || '功能详情'}</h4>
+                            <ul class="modal-info-list">
+                                ${defaultDetails.items.map(item => `<li class="modal-info-item ${nodeInfo ? nodeInfo.role : 'system'}">${item}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                `;
+                
+                modalContainer.innerHTML = html;
+                showModal();
+                return;
+            }
+            
+            console.log("找到节点详情数据:", details.title);
+            
+            // 如果有预设的详情数据，使用预设数据构建HTML
+            let html = `
+                <div class="modal-header">
+                    <h3 class="modal-title ${details.role}">${details.title}</h3>
+                    <span class="modal-close">&times;</span>
+                </div>
+                <div class="modal-content">
+            `;
+            
+            // 添加每个部分的详情
+            details.sections.forEach(section => {
+                html += `
+                    <div class="modal-section">
+                        <h4 class="modal-subtitle">${section.title}</h4>
+                        <ul class="modal-info-list">
+                `;
+                
+                // 添加每个项目的详情
+                section.items.forEach(item => {
+                    html += `<li class="modal-info-item ${section.role}">${item}</li>`;
+                });
+                
+                html += `
+                        </ul>
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+            
+            // 设置模态框内容并显示
+            modalContainer.innerHTML = html;
+            showModal();
+        }
+        
+        // 为没有详情数据的节点生成默认内容
+        function generateDefaultDetails(nodeId, nodeInfo) {
+            // 如果无法找到节点信息，提供通用内容
+            if (!nodeInfo) {
+                return {
+                    title: "功能信息",
+                    items: [
+                        "该功能是业务流程的重要环节",
+                        "系统将自动处理相关数据并更新状态",
+                        "用户可查看实时进度并获取操作建议",
+                        "数据安全加密传输确保信息安全",
+                        "如需更多帮助，请联系客服人员"
+                    ]
+                };
+            }
+            
+            // 使用节点基本信息构建默认详情
+            const title = nodeInfo.title;
+            const role = nodeInfo.role;
+            
+            // 根据角色提供不同的默认详情
+            let items = [];
+            if (role === 'user') {
+                items = [
+                    `${title}功能为用户提供便捷的操作界面`,
+                    "直观的界面设计确保操作简单易用",
+                    "个性化设置选项满足不同用户需求",
+                    "数据实时同步确保信息准确性",
+                    "操作历史记录方便用户回溯查看"
+                ];
+            } else if (role === 'restaurant') {
+                items = [
+                    `${title}功能帮助餐厅高效管理订单`,
+                    "智能排序系统优化订单处理流程",
+                    "自动提醒功能避免遗漏重要信息",
+                    "数据分析工具帮助优化运营决策",
+                    "与其他系统模块无缝集成确保协同工作"
+                ];
+            } else if (role === 'delivery') {
+                items = [
+                    `${title}模块确保配送过程高效可靠`,
+                    "智能路线规划减少配送时间",
+                    "实时监控系统确保食材安全",
+                    "异常情况自动预警并提供解决方案",
+                    "配送全程追踪提供完整透明记录"
+                ];
+            } else {
+                items = [
+                    `${title}功能是系统运行的重要组成部分`,
+                    "自动化处理减少人工干预需求",
+                    "高精度算法确保数据处理准确性",
+                    "可扩展架构适应业务规模变化",
+                    "多重备份机制确保系统稳定可靠"
+                ];
+            }
+            
+            return {
+                title: title || "功能详情",
+                subtitle: nodeInfo.subtitle || "功能介绍",
+                items: items
+            };
+        }
+        
+        // 显示模态框
+        function showModal() {
+            console.log("显示模态框");
+            // 确保模态框元素存在
+            if (!modalOverlay || !modalContainer) {
+                console.error("模态框元素不存在!");
+                return;
+            }
+            
+            // 先设置显示
+            modalOverlay.style.display = 'block';
+            modalContainer.style.display = 'block';
+            
+            // 触发重排以启动动画
+            void modalOverlay.offsetWidth;
+            void modalContainer.offsetWidth;
+            
+            // 添加活动类以启动动画
+            modalOverlay.classList.add('active');
+            modalContainer.classList.add('active');
+            
+            // 动态添加关闭按钮事件
+            const closeBtn = modalContainer.querySelector('.modal-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', hideModal);
+            }
+        }
+        
+        // 隐藏模态框
+        function hideModal() {
+            console.log("隐藏模态框");
+            // 确保模态框元素存在
+            if (!modalOverlay || !modalContainer) {
+                console.error("模态框元素不存在!");
+                return;
+            }
+            
+            // 移除活动类以开始关闭动画
+            modalOverlay.classList.remove('active');
+            modalContainer.classList.remove('active');
+            
+            // 等待动画完成后隐藏元素
+            setTimeout(() => {
+                modalOverlay.style.display = 'none';
+                modalContainer.style.display = 'none';
+            }, 300);
+        }
+
+        // 添加更多详情数据
+        Object.assign(detailsData, {
+            // 配送相关详情
+            delivery_prepare: {
+                title: "食材准备",
+                role: "delivery",
+                sections: [
+                    {
+                        title: "备货流程",
+                        items: [
+                            "订单接收：接收系统分配的配送任务",
+                            "备货清单：根据订单生成备货清单",
+                            "食材拣选：从库存中拣选新鲜食材",
+                            "质量检查：检查食材质量与保质期",
+                            "数量核对：确认食材数量符合订单要求"
+                        ],
+                        role: "delivery"
+                    },
+                    {
+                        title: "包装流程",
+                        items: [
+                            "专业包装：使用适合牛肉的专业包装材料",
+                            "温度控制：根据季节使用保温或冷藏包装",
+                            "密封处理：确保包装完好无损",
+                            "标签标识：贴上订单信息与食材详情标签",
+                            "出库检查：确认包装完整性后出库"
+                        ],
+                        role: "delivery"
+                    }
+                ]
+            },
+            delivery_dispatch: {
+                title: "配送安排",
+                role: "delivery",
+                sections: [
+                    {
+                        title: "路线规划",
+                        items: [
+                            "订单分类：按区域和配送时间对订单进行分类",
+                            "路线优化：规划最优配送路线减少路程",
+                            "时间安排：根据送达时间要求安排配送顺序",
+                            "车辆分配：根据配送量选择合适的配送车辆",
+                            "GPS导航：使用智能定位系统辅助配送路线"
+                        ],
+                        role: "delivery"
+                    },
+                    {
+                        title: "调度管理",
+                        items: [
+                            "实时调度：根据交通情况实时调整路线",
+                            "异常处理：处理突发情况和特殊需求",
+                            "及时通知：向餐厅和用户提供配送状态更新",
+                            "配送时效：确保食材在规定时间内送达",
+                            "配送质量：保证食材在运输过程中的新鲜度"
+                        ],
+                        role: "delivery"
+                    }
+                ]
+            },
+            delivery_tracking: {
+                title: "配送追踪",
+                role: "delivery",
+                sections: [
+                    {
+                        title: "实时监控",
+                        items: [
+                            "位置追踪：实时监控配送车辆位置",
+                            "状态更新：自动更新配送状态节点",
+                            "时间预估：根据实际情况调整预计送达时间",
+                            "预警机制：超时或异常路线预警提醒",
+                            "温度监控：特殊食材的温度实时监控"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "信息共享",
+                        items: [
+                            "餐厅查看：餐厅可查看食材配送状态",
+                            "配送记录：记录完整配送过程供追溯",
+                            "状态反馈：配送员实时反馈配送状态",
+                            "异常登记：记录并处理配送过程中的异常",
+                            "送达确认：配送完成后的电子签收确认"
+                        ],
+                        role: "delivery"
+                    }
+                ]
+            },
+            receiving: {
+                title: "食材接收",
+                role: "restaurant",
+                sections: [
+                    {
+                        title: "接收准备",
+                        items: [
+                            "接收预警：提前收到食材即将到达通知",
+                            "人员安排：指定专人负责食材接收",
+                            "场地准备：准备适合食材验收的区域",
+                            "工具准备：准备接收需要的工具和设备",
+                            "核对单据：准备订单信息以便核对"
+                        ],
+                        role: "restaurant"
+                    },
+                    {
+                        title: "初步检查",
+                        items: [
+                            "外包装检查：检查外包装是否完好",
+                            "运输状况：询问配送过程中是否有异常",
+                            "温度初检：检查食材温度是否符合标准",
+                            "品种核对：核对订购的食材种类是否正确",
+                            "数量确认：确认总体数量是否符合订单"
+                        ],
+                        role: "restaurant"
+                    }
+                ]
+            },
+            quality_check: {
+                title: "质量检查",
+                role: "restaurant",
+                sections: [
+                    {
+                        title: "验收标准",
+                        items: [
+                            "包装完整性：检查包装是否完好无损",
+                            "温度要求：检查食材温度是否符合保存要求",
+                            "保质期检查：确认食材在保质期内",
+                            "感官检查：观察食材颜色、气味等感官特性",
+                            "数量核对：核对食材种类和数量"
+                        ],
+                        role: "restaurant"
+                    },
+                    {
+                        title: "异常处理",
+                        items: [
+                            "轻微问题：记录并继续接收",
+                            "中度问题：部分接收并标记问题食材",
+                            "严重问题：拒收并上传照片证据",
+                            "问题反馈：向配送方反馈问题情况",
+                            "补发处理：安排补发或退款流程"
+                        ],
+                        role: "restaurant"
+                    }
+                ]
+            },
+            acceptance: {
+                title: "验收确认",
+                role: "restaurant",
+                sections: [
+                    {
+                        title: "验收确认流程",
+                        items: [
+                            "电子签收：使用APP完成电子签收",
+                            "验收单填写：记录验收情况和任何异常",
+                            "照片记录：拍摄食材照片作为验收凭证",
+                            "标签管理：贴上验收日期和保质期标签",
+                            "入库记录：更新食材库存管理系统"
+                        ],
+                        role: "restaurant"
+                    },
+                    {
+                        title: "后续处理",
+                        items: [
+                            "入库摆放：按类别和保质期将食材放入适当位置",
+                            "温度调整：将食材放入合适温度的存储环境",
+                            "问题处理：处理验收中发现的问题",
+                            "退换货：处理需要退换的食材",
+                            "质量反馈：反馈食材质量情况供供应链优化"
+                        ],
+                        role: "restaurant"
+                    }
+                ]
+            },
+            food_preparation: {
+                title: "食物制作",
+                role: "restaurant",
+                sections: [
+                    {
+                        title: "前期准备",
+                        items: [
+                            "食材准备：取出所需食材并按需解冻",
+                            "食材处理：清洗、分切和腌制处理",
+                            "调料准备：准备制作所需的调料和辅料",
+                            "工具准备：准备烹饪所需的工具和设备",
+                            "工作站设置：根据订单安排烹饪工作站"
+                        ],
+                        role: "restaurant"
+                    },
+                    {
+                        title: "烹饪过程",
+                        items: [
+                            "严格工艺：按照标准工艺流程制作牛排",
+                            "温度控制：精确控制烹饪温度保证口感",
+                            "时间把控：掌握最佳烹饪时间",
+                            "品质检验：主厨检验每道菜品质量",
+                            "精美摆盘：根据标准进行装盘和摆盘"
+                        ],
+                        role: "restaurant"
+                    }
+                ]
+            },
+            customer_receive: {
+                title: "顾客享用",
+                role: "user",
+                sections: [
+                    {
+                        title: "用餐体验",
+                        items: [
+                            "堂食服务：提供舒适的用餐环境和周到服务",
+                            "外卖享用：精美包装和保温措施确保口感",
+                            "用餐指导：提供专业的牛排食用建议",
+                            "个性化服务：根据顾客需求提供定制化服务",
+                            "实时反馈：顾客可随时反馈用餐体验"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "评价与反馈",
+                        items: [
+                            "口味评价：对食物口味和品质的评价",
+                            "服务评价：对服务质量和效率的评价",
+                            "环境评价：对餐厅环境或外卖包装的评价",
+                            "整体满意度：对整体体验的综合评分",
+                            "建议收集：收集顾客改进建议和期望"
+                        ],
+                        role: "user"
+                    }
+                ]
+            },
+            // 数据分析相关详情
+            data_collection: {
+                title: "数据采集",
+                role: "system",
+                sections: [
+                    {
+                        title: "采集渠道",
+                        items: [
+                            "用户行为：APP和网站上的用户浏览和操作行为",
+                            "交易数据：订单、支付和退款等交易数据",
+                            "评价数据：用户评分、评论和反馈信息",
+                            "运营数据：营销活动、优惠券和促销效果数据",
+                            "客服数据：客户服务交互和问题解决数据"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "采集方式",
+                        items: [
+                            "实时采集：关键业务数据的实时采集",
+                            "批量采集：定期批量采集的历史数据",
+                            "触发采集：特定操作触发的数据采集",
+                            "埋点采集：通过埋点收集用户行为数据",
+                            "集成采集：第三方平台数据集成"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            data_processing: {
+                title: "数据处理",
+                role: "system",
+                sections: [
+                    {
+                        title: "数据清洗",
+                        items: [
+                            "去重处理：移除重复数据记录",
+                            "缺失处理：处理数据缺失和异常值",
+                            "格式标准化：统一数据格式和标准",
+                            "数据转换：转换数据类型和单位",
+                            "数据校验：验证数据有效性和一致性"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "数据集成",
+                        items: [
+                            "多源整合：整合来自不同系统的数据",
+                            "历史关联：将新数据与历史数据关联",
+                            "维度拓展：增加数据分析维度",
+                            "特征提取：从原始数据中提取分析特征",
+                            "数据分类：按业务需求对数据进行分类"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            data_analysis: {
+                title: "数据分析",
+                role: "system",
+                sections: [
+                    {
+                        title: "分析维度",
+                        items: [
+                            "用户行为分析：用户浏览、下单、复购行为",
+                            "销售数据分析：各门店、各品类销售情况",
+                            "时间维度分析：不同时段、季节的销售变化",
+                            "区域分析：不同地区的用户偏好和消费能力",
+                            "促销效果分析：各类促销活动的转化和ROI"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "分析方法",
+                        items: [
+                            "描述性分析：基础数据统计和趋势展示",
+                            "预测性分析：销售预测和库存优化",
+                            "诊断性分析：问题根因分析和业务瓶颈识别",
+                            "规范性分析：提供优化建议和决策支持",
+                            "AI驱动分析：使用机器学习算法挖掘深层洞察"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            business_insights: {
+                title: "商业洞察",
+                role: "system",
+                sections: [
+                    {
+                        title: "洞察应用",
+                        items: [
+                            "业务决策：为管理层提供数据支持的决策依据",
+                            "趋势预测：预测市场和消费趋势变化",
+                            "风险评估：评估业务风险和潜在问题",
+                            "竞争分析：分析行业竞争态势和市场定位",
+                            "增长机会：发现业务增长点和机会"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "用户洞察",
+                        items: [
+                            "用户画像：构建精细化的用户特征画像",
+                            "消费习惯：分析用户消费频率和偏好",
+                            "生命周期：追踪用户从获取到流失的全周期",
+                            "忠诚度分析：识别高价值和高忠诚度用户",
+                            "需求预测：预测用户未来需求和兴趣"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            operational_optimization: {
+                title: "运营优化",
+                role: "system",
+                sections: [
+                    {
+                        title: "餐厅运营",
+                        items: [
+                            "工作流程：优化餐厅内部工作流程",
+                            "人员配置：根据销售数据优化人员排班",
+                            "食材管理：基于销售预测优化采购和库存",
+                            "质量控制：通过数据反馈改进食品质量",
+                            "成本控制：分析成本构成降低运营成本"
+                        ],
+                        role: "restaurant"
+                    },
+                    {
+                        title: "配送优化",
+                        items: [
+                            "线路优化：优化配送路线提高效率",
+                            "时效管理：改善配送时效和准时率",
+                            "资源分配：优化车辆和人员资源分配",
+                            "异常处理：提升异常情况处理效率",
+                            "质量保障：优化食材在途保鲜措施"
+                        ],
+                        role: "delivery"
+                    }
+                ]
+            },
+            personalization: {
+                title: "个性化推荐",
+                role: "system",
+                sections: [
+                    {
+                        title: "推荐机制",
+                        items: [
+                            "协同过滤：基于相似用户的喜好推荐",
+                            "内容过滤：基于商品特性和用户偏好推荐",
+                            "行为分析：基于用户历史行为推荐",
+                            "时间感知推荐：根据用户习惯的时间推荐",
+                            "情境推荐：根据季节、天气等情境因素推荐"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "应用场景",
+                        items: [
+                            "首页个性化：根据用户偏好定制首页展示",
+                            "搜索结果优化：调整搜索结果排序",
+                            "促销活动定向：向特定用户推送合适的促销",
+                            "智能套餐推荐：推荐符合用户口味的套餐",
+                            "会员专享推荐：为不同等级会员提供差异化推荐"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            restaurant_analytics: {
+                title: "餐厅数据分析",
+                role: "restaurant",
+                sections: [
+                    {
+                        title: "销售分析",
+                        items: [
+                            "菜品表现：各类菜品销售情况和受欢迎程度",
+                            "时段分析：不同时段的销售峰值和客流量",
+                            "客单价分析：平均客单价和提升策略",
+                            "套餐分析：套餐搭配效果和优化建议",
+                            "促销效果：各类促销活动和优惠的销售转化"
+                        ],
+                        role: "restaurant"
+                    },
+                    {
+                        title: "服务质量",
+                        items: [
+                            "用户评价：用户对食品和服务的评价情况",
+                            "投诉分析：投诉类型和解决效率分析",
+                            "服务时效：点餐到上菜的时间分析",
+                            "回客率：老客户回访率和忠诚度分析",
+                            "员工绩效：员工服务效率和质量评估"
+                        ],
+                        role: "restaurant"
+                    }
+                ]
+            },
+            delivery_analytics: {
+                title: "配送数据分析",
+                role: "delivery",
+                sections: [
+                    {
+                        title: "效率分析",
+                        items: [
+                            "配送时效：平均配送时间和准时率",
+                            "路线效率：不同配送路线的时间和成本对比",
+                            "资源利用：车辆和人员资源利用率",
+                            "区域覆盖：配送区域覆盖率和盲点分析",
+                            "峰值处理：订单高峰期的配送能力分析"
+                        ],
+                        role: "delivery"
+                    },
+                    {
+                        title: "质量分析",
+                        items: [
+                            "食材新鲜度：配送过程中食材品质保持情况",
+                            "包装完整性：包装在配送过程中的完好率",
+                            "温度控制：不同季节的温度控制效果",
+                            "异常率：配送过程中发生异常的频率和类型",
+                            "用户满意度：用户对配送服务的评价分析"
+                        ],
+                        role: "delivery"
+                    }
+                ]
+            },
+            marketing_strategy: {
+                title: "营销策略",
+                role: "system",
+                sections: [
+                    {
+                        title: "精准营销",
+                        items: [
+                            "用户分层：根据价值和活跃度的用户分层策略",
+                            "生命周期营销：针对不同生命周期的营销策略",
+                            "场景营销：特定场景和时点的营销方案",
+                            "节日营销：重要节日和季节性营销计划",
+                            "个性化推送：基于用户偏好的定制化推送"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "会员体系",
+                        items: [
+                            "会员等级：会员等级设计和特权规划",
+                            "积分体系：积分获取和使用规则设计",
+                            "会员活动：专属会员活动和优惠政策",
+                            "会员关怀：会员生日和纪念日关怀策略",
+                            "忠诚度提升：提高会员留存和活跃度的策略"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            // 添加其他未完善的节点详情
+            menu_browse: {
+                title: "商品浏览",
+                role: "user",
+                sections: [
+                    {
+                        title: "浏览功能",
+                        items: [
+                            "分类浏览：按牛排种类、配菜、饮品等分类查看",
+                            "推荐菜品：系统推荐的热门或季节性菜品",
+                            "搜索功能：通过关键词搜索特定食品",
+                            "筛选功能：根据价格、评分等条件筛选",
+                            "排序方式：按销量、价格、评分等方式排序"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "菜品展示",
+                        items: [
+                            "高清图片：展示菜品的精美图片",
+                            "详细描述：包含原料、烹饪方式等描述",
+                            "价格显示：清晰显示菜品价格和优惠信息",
+                            "用户评价：展示其他用户对菜品的评价",
+                            "销量展示：显示菜品的受欢迎程度"
+                        ],
+                        role: "restaurant"
+                    }
+                ]
+            },
+            product_detail: {
+                title: "商品详情",
+                role: "user",
+                sections: [
+                    {
+                        title: "详情内容",
+                        items: [
+                            "牛排来源：牛肉的产地和品种信息",
+                            "规格选择：重量、厚度、熟度等规格选项",
+                            "烹饪方式：推荐的烹饪方式和火候",
+                            "配菜搭配：推荐的配菜和酱料搭配",
+                            "营养成分：主要营养成分和热量信息"
+                        ],
+                        role: "restaurant"
+                    },
+                    {
+                        title: "互动功能",
+                        items: [
+                            "收藏商品：将喜欢的商品添加到收藏夹",
+                            "分享功能：将商品分享给朋友或社交媒体",
+                            "评价查看：浏览其他用户的详细评价",
+                            "提问回答：查看关于商品的常见问题解答",
+                            "相关推荐：浏览相关或经常一起购买的商品"
+                        ],
+                        role: "user"
+                    }
+                ]
+            },
+            coupons: {
+                title: "优惠券选择",
+                role: "user",
+                sections: [
+                    {
+                        title: "优惠券类型",
+                        items: [
+                            "满减券：满足一定金额后减免特定金额",
+                            "折扣券：按比例折扣总金额",
+                            "礼品券：购物满额赠送特定商品",
+                            "新客券：专为新用户提供的特别优惠",
+                            "会员券：针对不同等级会员的专属优惠"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "使用规则",
+                        items: [
+                            "使用门槛：优惠券的最低消费金额要求",
+                            "有效期限：优惠券的使用截止日期",
+                            "使用范围：适用的商品类别或店铺",
+                            "叠加规则：是否可与其他优惠同时使用",
+                            "最大优惠：单笔订单的最高优惠限额"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            delivery_time: {
+                title: "配送时间",
+                role: "user",
+                sections: [
+                    {
+                        title: "时间选择",
+                        items: [
+                            "即时配送：下单后立即配送（约30-45分钟送达）",
+                            "预约配送：提前选择特定时间段配送",
+                            "高峰时段：用餐高峰期可能延长的配送时间",
+                            "特殊时段：夜间或特殊天气的配送时间",
+                            "配送延迟：可能导致配送延迟的因素提示"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "配送策略",
+                        items: [
+                            "智能派单：系统根据位置和路线智能分配骑手",
+                            "优先级设置：不同类型订单的配送优先级",
+                            "配送范围：基于位置的配送范围和时间估算",
+                            "骑手选择：特定情况下可选择熟悉的骑手",
+                            "配送追踪：实时追踪订单配送状态"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            order_create: {
+                title: "生成订单",
+                role: "system",
+                sections: [
+                    {
+                        title: "订单生成流程",
+                        items: [
+                            "订单编号：生成唯一的订单编号",
+                            "状态初始化：设置订单初始状态为待支付",
+                            "信息汇总：汇总商品、配送、用户等信息",
+                            "库存锁定：临时锁定相关商品库存",
+                            "价格计算：最终计算订单总金额含优惠"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "用户通知",
+                        items: [
+                            "订单确认：向用户展示订单已创建成功",
+                            "支付引导：引导用户完成支付流程",
+                            "超时提醒：未支付订单的超时提醒",
+                            "订单存储：将订单保存到用户的订单列表",
+                            "取消选项：提供订单取消的选项和规则"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            status_update: {
+                title: "状态更新",
+                role: "system",
+                sections: [
+                    {
+                        title: "订单状态变更",
+                        items: [
+                            "支付确认：验证支付成功并更新订单状态",
+                            "状态流转：按照预设流程更新订单状态",
+                            "数据同步：向各相关系统同步状态变更",
+                            "审计记录：记录每次状态变更的时间和原因",
+                            "异常处理：处理状态更新过程中的异常情况"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "通知机制",
+                        items: [
+                            "用户通知：通过推送、短信等通知用户状态变更",
+                            "商家通知：通知餐厅和配送店状态更新",
+                            "内部通知：系统内部各模块的状态同步",
+                            "提醒策略：根据状态类型采用不同的提醒策略",
+                            "消息追踪：追踪通知送达和阅读状态"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            order_notify: {
+                title: "订单通知",
+                role: "system",
+                sections: [
+                    {
+                        title: "通知渠道",
+                        items: [
+                            "系统推送：通过餐厅管理系统推送新订单通知",
+                            "短信通知：发送订单详情短信到餐厅联系人",
+                            "电话确认：系统自动或人工电话确认重要订单",
+                            "邮件通知：发送详细订单邮件给餐厅管理者",
+                            "打印通知：自动向餐厅打印机发送订单小票"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "通知内容",
+                        items: [
+                            "订单摘要：订单号、金额、商品数量等关键信息",
+                            "客户信息：客户联系方式和特殊要求",
+                            "商品详情：详细的商品清单和定制要求",
+                            "时间要求：期望的制作完成时间和配送时间",
+                            "操作指引：餐厅需要采取的后续操作指引"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            restaurant_confirm: {
+                title: "餐厅确认",
+                role: "restaurant",
+                sections: [
+                    {
+                        title: "接单流程",
+                        items: [
+                            "订单审核：检查订单内容和特殊要求",
+                            "能力评估：评估当前是否能够满足订单要求",
+                            "确认操作：在系统中确认接受订单",
+                            "拒单处理：特殊情况下的拒单理由和流程",
+                            "准备安排：接单后的内部准备工作安排"
+                        ],
+                        role: "restaurant"
+                    },
+                    {
+                        title: "响应时间",
+                        items: [
+                            "即时响应：收到订单后的最快响应时间",
+                            "超时处理：未及时响应的自动处理机制",
+                            "高峰应对：订单高峰期的响应策略",
+                            "优先级处理：不同类型订单的处理优先级",
+                            "延迟通知：需要延迟处理时的客户通知"
+                        ],
+                        role: "restaurant"
+                    }
+                ]
+            },
+            delivery_assign: {
+                title: "配送分配",
+                role: "system",
+                sections: [
+                    {
+                        title: "分配算法",
+                        items: [
+                            "智能匹配：根据位置、评级等因素匹配配送员",
+                            "路线优化：考虑多单合并和最优路线",
+                            "时效保障：确保在约定时间内完成配送",
+                            "负载均衡：平衡各配送员的工作量",
+                            "特殊技能：考虑配送特殊食材所需的技能和设备"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "配送任务",
+                        items: [
+                            "任务推送：向配送APP推送新的配送任务",
+                            "信息提供：提供配送所需的全部信息",
+                            "接单确认：配送员确认接单的流程",
+                            "变更处理：配送过程中的变更和异常处理",
+                            "完成确认：配送完成后的确认机制"
+                        ],
+                        role: "delivery"
+                    }
+                ]
+            },
+            status_sync: {
+                title: "状态同步",
+                role: "system",
+                sections: [
+                    {
+                        title: "同步机制",
+                        items: [
+                            "实时更新：各方状态变更的实时同步",
+                            "推送通知：主动推送状态变更给相关方",
+                            "状态查询：允许各方查询当前最新状态",
+                            "历史记录：保存完整的状态变更历史",
+                            "数据一致性：确保各系统间的状态一致性"
+                        ],
+                        role: "system"
+                    },
+                    {
+                        title: "状态类型",
+                        items: [
+                            "订单状态：从创建到完成的完整订单状态",
+                            "配送状态：配送过程中的详细状态节点",
+                            "支付状态：支付流程的各个状态节点",
+                            "食材状态：食材从备货到烹饪的状态跟踪",
+                            "用户操作：用户查看、确认等操作的状态"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            // 添加其他位置服务与门店相关节点详情
+            location: {
+                title: "位置服务",
+                role: "user",
+                sections: [
+                    {
+                        title: "定位方式",
+                        items: [
+                            "GPS定位：使用设备GPS进行精确定位",
+                            "网络定位：通过网络IP地址进行大致定位",
+                            "手动定位：用户手动输入或选择位置",
+                            "历史位置：使用用户历史保存的位置",
+                            "位置共享：通过分享链接获取位置信息"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "位置应用",
+                        items: [
+                            "附近门店：显示用户周边的门店列表",
+                            "距离计算：计算并显示到各门店的距离",
+                            "配送范围：判断用户是否在配送范围内",
+                            "智能排序：根据距离和评分智能排序店铺",
+                            "地图导航：提供到店的地图导航功能"
+                        ],
+                        role: "system"
+                    }
+                ]
+            },
+            store_selection: {
+                title: "门店选择与地图浏览",
+                role: "user",
+                sections: [
+                    {
+                        title: "门店列表功能",
+                        items: [
+                            "附近门店：显示用户周边的门店列表",
+                            "距离计算：计算并显示到各门店的距离",
+                            "营业状态：实时显示门店营业状态",
+                            "评分展示：显示门店评分和评价数量",
+                            "过滤筛选：按距离、评分等条件筛选"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "地图交互功能",
+                        items: [
+                            "门店标记：在地图上直观展示门店位置",
+                            "点击交互：点击标记查看门店简要信息",
+                            "缩放操作：支持地图缩放查看更多信息",
+                            "路线规划：计算从当前位置到店路线",
+                            "区域筛选：支持按区域查找门店"
+                        ],
+                        role: "user"
+                    }
+                ]
+            },
+            store_detail: {
+                title: "店铺详情",
+                role: "user",
+                sections: [
+                    {
+                        title: "基本信息",
+                        items: [
+                            "店铺介绍：门店名称、地址、联系方式",
+                            "营业时间：常规营业时间与特殊安排",
+                            "门店实景：店内环境与装修风格展示",
+                            "座位情况：大致座位数量与布局",
+                            "特色标签：如环境优雅、安静舒适等"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "用户评价",
+                        items: [
+                            "评分统计：整体评分与各维度评分",
+                            "评价列表：用户实际评价与照片",
+                            "热门评价：受到点赞最多的评价",
+                            "商家回复：商家对评价的官方回应",
+                            "评价筛选：按评分高低、时间等筛选"
+                        ],
+                        role: "user"
+                    }
+                ]
+            },
+            service_selection: {
+                title: "服务方式选择",
+                role: "user",
+                sections: [
+                    {
+                        title: "服务选项",
+                        items: [
+                            "堂食服务：在店内用餐的预约服务",
+                            "外卖配送：送餐上门的配送服务",
+                            "预约取餐：提前下单到店自取的服务",
+                            "包间预订：预订私密包间的高端服务",
+                            "特殊定制：为特别场合定制的服务方案"
+                        ],
+                        role: "user"
+                    },
+                    {
+                        title: "选择建议",
+                        items: [
+                            "人气推荐：根据用户反馈推荐的服务方式",
+                            "时间建议：基于当前时间的最佳选择建议",
+                            "优惠提示：不同服务方式可用的优惠信息",
+                            "等待预估：当前各服务方式的预计等待时间",
+                            "个性推荐：基于用户历史习惯的个性化推荐"
+                        ],
+                        role: "system"
+                    }
+                ]
+            }
+        });
+
+        // 门店地图交互
+        document.addEventListener('DOMContentLoaded', function() {
+            // 监听内容加载事件，确保在地图加载后执行
+            document.addEventListener('click', function(e) {
+                // 使用事件委托处理地图上的点击事件
+                if (e.target.closest('.map-location.restaurant')) {
+                    const mapLocation = e.target.closest('.map-location.restaurant');
+                    const storeId = mapLocation.dataset.id;
+                    const storeInfoCard = document.querySelector('.store-info-card');
+                    
+                    // 如果卡片已显示且点击的是同一个商店，则隐藏卡片
+                    if (storeInfoCard.classList.contains('active') && storeInfoCard.dataset.storeId === storeId) {
+                        storeInfoCard.classList.remove('active');
+                        return;
+                    }
+                    
+                    // 获取标记位置
+                    const rect = mapLocation.getBoundingClientRect();
+                    const mapContainer = document.querySelector('.map-container');
+                    const mapRect = mapContainer.getBoundingClientRect();
+                    
+                    // 计算信息卡片位置
+                    const cardLeft = (rect.left - mapRect.left + rect.width/2);
+                    const cardTop = (rect.top - mapRect.top);
+                    
+                    // 设置信息卡片位置
+                    storeInfoCard.style.left = `${cardLeft}px`;
+                    storeInfoCard.style.top = `${cardTop - 10}px`;
+                    storeInfoCard.dataset.storeId = storeId;
+                    
+                    // 根据不同商店更新卡片内容
+                    const storeTitle = storeInfoCard.querySelector('.info-card-title');
+                    const storeAddress = storeInfoCard.querySelector('.info-card-address');
+                    const storeRating = storeInfoCard.querySelector('.info-card-rating');
+                    
+                    // 根据storeId设置不同的内容
+                    if (storeId === 'store1') {
+                        storeTitle.textContent = "牛排自由 · 融创店";
+                        storeAddress.textContent = "地址：融创中心购物广场3层301铺";
+                        storeRating.innerHTML = "⭐⭐⭐⭐⭐ 4.8分 (1283条评价)";
+                    } else if (storeId === 'store2') {
+                        storeTitle.textContent = "牛排自由 · 金融街店";
+                        storeAddress.textContent = "地址：金融街购物中心2层202铺";
+                        storeRating.innerHTML = "⭐⭐⭐⭐⭐ 4.8分 (956条评价)";
+                    } else if (storeId === 'store3') {
+                        storeTitle.textContent = "牛排自由 · 中关村店";
+                        storeAddress.textContent = "地址：中关村大厦1层108铺";
+                        storeRating.innerHTML = "⭐⭐⭐⭐⭐ 4.7分 (872条评价)";
+                    }
+                    
+                    // 显示信息卡片
+                    storeInfoCard.classList.add('active');
+                } else if (e.target.closest('.info-card-close')) {
+                    // 点击关闭按钮时隐藏卡片
+                    document.querySelector('.store-info-card').classList.remove('active');
+                } else if (!e.target.closest('.store-info-card') && !e.target.closest('.map-location')) {
+                    // 点击地图空白处隐藏信息卡片
+                    const storeInfoCard = document.querySelector('.store-info-card');
+                    if (storeInfoCard) {
+                        storeInfoCard.classList.remove('active');
+                    }
+                }
+            });
+            
+            // 确保只在地图加载后添加流动动画
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList' && document.querySelector('.map-container')) {
+                        // 在地图容器加载后初始化动画
+                        initDistanceLines();
+                        observer.disconnect();
+                    }
+                });
+            });
+            
+            observer.observe(document.getElementById('flowContainer'), { childList: true, subtree: true });
+            
+            // 初始化距离线动画
+            function initDistanceLines() {
+                const distanceLines = document.querySelectorAll('.distance-line');
+                
+                if (distanceLines.length > 0) {
+                    // 已存在距离线，添加动画
+                    distanceLines.forEach(line => {
+                        setInterval(() => {
+                            const before = document.createElement('div');
+                            before.className = 'flowing-dot';
+                            before.style.position = 'absolute';
+                            before.style.width = '6px';
+                            before.style.height = '6px';
+                            before.style.borderRadius = '50%';
+                            before.style.background = '#4285f4';
+                            before.style.left = '0';
+                            before.style.top = '-3px';
+                            before.style.animation = 'flowDot 2s linear forwards';
+                            line.appendChild(before);
+                            
+                            setTimeout(() => {
+                                line.removeChild(before);
+                            }, 2000);
+                        }, Math.random() * 2000 + 1000);
+                    });
+                    
+                    // 添加流动点动画
+                    const styleSheet = document.createElement('style');
+                    styleSheet.textContent = `
+                        @keyframes flowDot {
+                            0% {
+                                left: 0;
+                                opacity: 0;
+                            }
+                            10% {
+                                opacity: 1;
+                            }
+                            90% {
+                                opacity: 1;
+                            }
+                            100% {
+                                left: 100%;
+                                opacity: 0;
+                            }
+                        }
+                    `;
+                    document.head.appendChild(styleSheet);
+                }
+            }
+        });
+
+        // 显示店铺详情
+        function showStoreDetail(storeId) {
+            console.log("显示店铺详情:", storeId);
+            
+            const storeData = {
+                store1: {
+                    name: "牛排自由 · 融创店",
+                    address: "融创中心购物广场3层301铺",
+                    rating: "4.8",
+                    reviews: "1283",
+                    hours: "10:00-22:00",
+                    phone: "010-12345678",
+                    distance: "500m",
+                    tags: ["人气爆棚", "可预约", "新店优惠"],
+                    description: "位于融创中心商圈核心位置，环境典雅，提供高品质牛排和精致服务，是商务宴请和情侣约会的理想场所。",
+                    specialties: ["澳洲和牛A5", "美国安格斯黑牛", "法式蓝带牛排"],
+                    position: { top: "40%", left: "60%" }
+                },
+                store2: {
+                    name: "牛排自由 · 金融街店",
+                    address: "金融街购物中心4层428铺",
+                    rating: "4.7",
+                    reviews: "856",
+                    hours: "10:30-21:30",
+                    phone: "010-23456789",
+                    distance: "1.2km",
+                    tags: ["老牌门店", "环境优雅", "特色牛排"],
+                    description: "金融街高端商务区内的精品牛排店，主打高端商务宴请，环境安静优雅，提供专属包厢和定制服务。",
+                    specialties: ["法式蓝带牛排", "意式香煎牛排", "特色酱汁牛排"],
+                    position: { top: "60%", left: "55%" }
+                },
+                store3: {
+                    name: "牛排自由 · 中关村店",
+                    address: "中关村广场2层209铺",
+                    rating: "4.9",
+                    reviews: "1405",
+                    hours: "11:00-22:00",
+                    phone: "010-34567890",
+                    distance: "2.5km",
+                    tags: ["人气爆棚", "情侣约会", "团体聚餐"],
+                    description: "中关村科技园区内的创新牛排体验店，面向年轻群体，提供创意牛排料理和轻松活泼的用餐氛围。",
+                    specialties: ["创意调味牛排", "多国风味牛排", "季节限定牛排"],
+                    position: { top: "45%", left: "40%" }
+                }
+            };
+            
+            // 获取店铺信息卡片
+            const infoCard = document.querySelector('.store-info-card');
+            if(!infoCard) {
+                console.error("未找到店铺信息卡片元素!");
+                return;
+            }
+            
+            // 获取店铺数据
+            const store = storeData[storeId];
+            if(!store) {
+                console.error("未找到店铺数据:", storeId);
+                return;
+            }
+            
+            console.log("找到店铺数据:", store.name);
+            
+            // 先隐藏卡片以便动画效果
+            infoCard.classList.remove('active');
+            
+            // 更新卡片位置，靠近对应的店铺标记
+            if(store.position) {
+                infoCard.style.top = store.position.top;
+                infoCard.style.left = store.position.left;
+            }
+            
+            // 延迟更新内容，以便动画顺畅
+            setTimeout(() => {
+                try {
+                    // 更新店铺信息卡片内容
+                    const titleEl = infoCard.querySelector('.info-card-title');
+                    const ratingEl = infoCard.querySelector('.info-card-rating');
+                    const addressEl = infoCard.querySelector('.info-card-address');
+                    const hoursEl = infoCard.querySelector('.info-card-hours');
+                    const phoneEl = infoCard.querySelector('.info-card-phone');
+                    const tagsEl = infoCard.querySelector('.info-card-tags');
+                    
+                    if(titleEl) titleEl.textContent = store.name;
+                    if(ratingEl) ratingEl.innerHTML = `⭐⭐⭐⭐⭐ ${store.rating}分 (${store.reviews}条评价)`;
+                    if(addressEl) addressEl.textContent = `地址：${store.address}`;
+                    if(hoursEl) hoursEl.textContent = `营业时间：${store.hours}`;
+                    if(phoneEl) phoneEl.textContent = `电话：${store.phone}`;
+                    
+                    if(tagsEl) {
+                        // 清空已有标签
+                        tagsEl.innerHTML = '';
+                        // 添加新标签
+                        store.tags.forEach(tag => {
+                            const tagEl = document.createElement('span');
+                            tagEl.className = 'info-tag';
+                            tagEl.textContent = tag;
+                            tagsEl.appendChild(tagEl);
+                        });
+                    }
+                    
+                    // 显示店铺信息卡片
+                    infoCard.classList.add('active');
+                    
+                    // 高亮相应的列表项
+                    document.querySelectorAll('.store-list-item').forEach(item => {
+                        if(item.dataset.id === storeId) {
+                            item.classList.add('active');
+                        } else {
+                            item.classList.remove('active');
+                        }
+                    });
+                    
+                    console.log("店铺信息卡片已更新");
+                } catch (err) {
+                    console.error("更新店铺信息卡片时出错:", err);
+                }
+            }, 100);
+            
+            // 获取地图上对应的店铺标记，为其添加高亮效果
+            try {
+                document.querySelectorAll('.map-location').forEach(location => {
+                    if(location.dataset.id === storeId) {
+                        // 添加脉冲动画效果
+                        location.classList.add('pulse-animation');
+                        // 5秒后移除动画效果
+                        setTimeout(() => {
+                            location.classList.remove('pulse-animation');
+                        }, 5000);
+                    } else if(location.classList.contains('restaurant')) {
+                        // 移除其他餐厅标记的脉冲动画
+                        location.classList.remove('pulse-animation');
+                    }
+                });
+                
+                // 动态显示从用户位置到所选店铺的路线动画
+                updateRouteAnimation(storeId);
+            } catch (err) {
+                console.error("更新地图标记时出错:", err);
+            }
+        }
+
+        // 更新路线动画
+        function updateRouteAnimation(storeId) {
+            console.log("更新路线动画:", storeId);
+            
+            // 获取对应店铺的坐标
+            const locations = {
+                store1: { x: 60, y: 40 },
+                store2: { x: 55, y: 60 },
+                store3: { x: 40, y: 45 }
+            };
+            
+            // 用户位置坐标（固定在地图中心）
+            const userLocation = { x: 50, y: 50 };
+            
+            // 获取目标店铺坐标
+            const targetLocation = locations[storeId];
+            if(!targetLocation) {
+                console.error("未找到店铺位置坐标:", storeId);
+                return;
+            }
+            
+            // 获取SVG路径元素
+            const routePath = document.querySelector('.map-route path');
+            if(!routePath) {
+                console.error("未找到路径元素!");
+                return;
+            }
+            
+            try {
+                // 构建新的路径
+                // 使用二次贝塞尔曲线创建平滑路线
+                const controlX = (userLocation.x + targetLocation.x) / 2;
+                const controlY = userLocation.y + (Math.random() * 10 - 5); // 添加一些随机性
+                
+                // 设置路径
+                const pathData = `M${userLocation.x},${userLocation.y} Q${controlX},${controlY} ${targetLocation.x},${targetLocation.y}`;
+                routePath.setAttribute('d', pathData);
+                
+                // 添加动画效果
+                routePath.style.strokeDasharray = '8, 4';
+                routePath.style.animation = 'dash 30s linear infinite';
+                
+                console.log("路线动画已更新");
+            } catch (err) {
+                console.error("更新路线动画时出错:", err);
+            }
+        }
+
+        // 显示完整注册流程详情
+        function showRegistrationDetails() {
+            let html = `
+                <div class="modal-header">
+                    <h3 class="modal-title user">用户与商家注册流程</h3>
+                    <span class="modal-close" onclick="hideModal()">&times;</span>
+                </div>
+                <div class="modal-content">
+                    <div class="modal-section">
+                        <h4 class="modal-subtitle">消费者注册</h4>
+                        <ul class="modal-info-list">
+                            <li class="modal-info-item user">手机号注册：输入手机号并通过短信验证</li>
+                            <li class="modal-info-item user">微信授权登录：通过微信账号快速登录</li>
+                            <li class="modal-info-item user">第三方账号登录：支持其他第三方账号授权</li>
+                            <li class="modal-info-item user">个人信息完善：设置昵称、头像等基本信息</li>
+                            <li class="modal-info-item user">地址管理：添加常用收货地址和联系方式</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="modal-section">
+                        <h4 class="modal-subtitle">餐饮店注册</h4>
+                        <ul class="modal-info-list">
+                            <li class="modal-info-item restaurant">基本信息：填写店铺名称、经营地址、联系方式</li>
+                            <li class="modal-info-item restaurant">资质上传：营业执照、食品经营许可证扫描件</li>
+                            <li class="modal-info-item restaurant">店铺照片：上传门店环境、厨房等照片</li>
+                            <li class="modal-info-item restaurant">服务范围：设置配送范围和营业时间</li>
+                            <li class="modal-info-item restaurant">协议签署：签署平台入驻协议和服务条款</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="modal-section">
+                        <h4 class="modal-subtitle">牛肉配送店注册</h4>
+                        <ul class="modal-info-list">
+                            <li class="modal-info-item delivery">供应商信息：填写公司名称、经营地址、联系方式</li>
+                            <li class="modal-info-item delivery">资质认证：营业执照、食品流通许可证等</li>
+                            <li class="modal-info-item delivery">产品资质：上传产品来源证明、质量认证</li>
+                            <li class="modal-info-item delivery">配送能力：配送范围、时效和运力说明</li>
+                            <li class="modal-info-item delivery">协议签署：签署食材供应协议和质量保证条款</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="modal-section">
+                        <h4 class="modal-subtitle">注册流程概述</h4>
+                        <ul class="modal-info-list">
+                            <li class="modal-info-item system">注册页面统一设置角色切换，用户需选择自己所属的角色</li>
+                            <li class="modal-info-item system">消费者使用手机号、微信授权、第三方账号等方式快速注册</li>
+                            <li class="modal-info-item system">餐饮店除基本信息外，还需上传营业执照、食品经营加工许可证等资质证明</li>
+                            <li class="modal-info-item system">牛肉配送店需要提供营业执照、食品经营许可证等资质证明</li>
+                            <li class="modal-info-item system">消费者登录采用简单的手机号/微信登录方式，商家在审核通过后使用相应账号登录</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            
+            modalContainer.innerHTML = html;
+            showModal();
+        }
+
+        // 修改订单信息确认模态框内容
+        // 在显示订单确认模态框时，添加牛肉成熟度选择
+        function showOrderConfirmDetails() {
+            // 构建模态框HTML
+            let html = `
+                <div class="modal-header">
+                    <h3 class="modal-title user">订单确认</h3>
+                    <span class="modal-close">&times;</span>
+                </div>
+                <div class="modal-content">
+                    <div class="modal-section">
+                        <h4 class="modal-subtitle">订单信息确认</h4>
+                        <ul class="modal-info-list">
+                            <li class="modal-info-item user">确认购物车中的商品清单、数量、金额</li>
+                            <li class="modal-info-item user">确认食材加工费用和场地服务费</li>
+                            <li class="modal-info-item user">选择牛肉加工成熟度（三成熟、四成熟、五成熟、六成熟、七成熟、全熟）</li>
+                            <li class="modal-info-item user">填写备注和特殊要求</li>
+                            <li class="modal-info-item user">选择优惠券或满减活动</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="modal-section">
+                        <h4 class="modal-subtitle">牛肉成熟度选择</h4>
+                        <div class="cooking-options">
+                            <div class="cooking-option" data-level="3">
+                                <div class="cooking-circle" style="background: linear-gradient(135deg, #ff6b6b 30%, #cc0000 100%);"></div>
+                                <div class="cooking-label">三成熟</div>
+                                <div class="cooking-desc">血红色，中心冷，质地较软</div>
+                            </div>
+                            <div class="cooking-option" data-level="4">
+                                <div class="cooking-circle" style="background: linear-gradient(135deg, #ff5252 30%, #cc0000 100%);"></div>
+                                <div class="cooking-label">四成熟</div>
+                                <div class="cooking-desc">暗红色，中心微温，外部熟</div>
+                            </div>
+                            <div class="cooking-option" data-level="5">
+                                <div class="cooking-circle" style="background: linear-gradient(135deg, #ff4081 30%, #c51162 100%);"></div>
+                                <div class="cooking-label">五成熟</div>
+                                <div class="cooking-desc">粉红色，中心温热，汁多味鲜</div>
+                            </div>
+                            <div class="cooking-option" data-level="6">
+                                <div class="cooking-circle" style="background: linear-gradient(135deg, #f06292 30%, #c2185b 100%);"></div>
+                                <div class="cooking-label">六成熟</div>
+                                <div class="cooking-desc">浅粉色，中心熟透，柔软多汁</div>
+                            </div>
+                            <div class="cooking-option" data-level="7">
+                                <div class="cooking-circle" style="background: linear-gradient(135deg, #ba68c8 30%, #7b1fa2 100%);"></div>
+                                <div class="cooking-label">七成熟</div>
+                                <div class="cooking-desc">微粉，全熟，稍有汁液</div>
+                            </div>
+                            <div class="cooking-option" data-level="10">
+                                <div class="cooking-circle" style="background: linear-gradient(135deg, #9c27b0 30%, #4a148c 100%);"></div>
+                                <div class="cooking-label">全熟</div>
+                                <div class="cooking-desc">全熟，无粉红色，质地较硬</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-section">
+                        <h4 class="modal-subtitle">预约时间</h4>
+                        <ul class="modal-info-list">
+                            <li class="modal-info-item user">预约餐饮店就餐时间</li>
+                            <li class="modal-info-item user">牛肉配送时间的设置</li>
+                            <li class="modal-info-item user">系统检查时间冲突并提供建议</li>
+                            <li class="modal-info-item user">生成订单，进入支付环节</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="modal-section">
+                        <button class="btn btn-primary">确认订单并进入支付</button>
+                    </div>
+                </div>
+            `;
+            
+            // 设置模态框内容并显示
+            modalContainer.innerHTML = html;
+            showModal();
+            
+            // 为成熟度选项添加点击事件
+            setTimeout(() => {
+                document.querySelectorAll('.cooking-option').forEach(option => {
+                    option.addEventListener('click', () => {
+                        // 移除所有选中状态
+                        document.querySelectorAll('.cooking-option').forEach(opt => 
+                            opt.classList.remove('selected'));
+                        // 添加选中状态
+                        option.classList.add('selected');
+                    });
+                });
+            }, 100);
+        }
+    </script>
+</body>
+</html> 
